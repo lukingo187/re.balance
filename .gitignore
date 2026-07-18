@@ -1,6 +1,10 @@
 # Compiled binary (built from ./cmd/rebal)
 /rebal
 
+# Personal portfolio data — kept out of git (copy config.example.toml instead)
+/config.toml
+/state.json
+
 # Test & coverage artifacts
 *.test
 *.out

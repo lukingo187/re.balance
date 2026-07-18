@@ -17,16 +17,26 @@ func (e errStarterWritten) Error() string {
 	return fmt.Sprintf("no config found — wrote a starter to:\n  %s\nedit it, then run this command again", e.path)
 }
 
+// configPath resolves the config location: an explicit --config wins, then a
+// config.toml in the current directory (handy when kept beside the code), then
+// the XDG default.
 func configPath(cmd *cobra.Command) (string, error) {
 	if p, _ := cmd.Flags().GetString("config"); p != "" {
 		return p, nil
 	}
+	if _, err := os.Stat("config.toml"); err == nil {
+		return "config.toml", nil
+	}
 	return config.DefaultPath()
 }
 
+// statePath resolves the state location with the same precedence as configPath.
 func statePath(cmd *cobra.Command) (string, error) {
 	if p, _ := cmd.Flags().GetString("state"); p != "" {
 		return p, nil
+	}
+	if _, err := os.Stat("state.json"); err == nil {
+		return "state.json", nil
 	}
 	return state.DefaultPath()
 }

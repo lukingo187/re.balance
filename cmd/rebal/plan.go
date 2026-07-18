@@ -68,24 +68,24 @@ func printPlan(w interface{ Write([]byte) (int, error) }, in rebal.Input, plan r
 		formatEuro(total), in.Monthly, in.Months)
 
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', tabwriter.AlignRight)
-	fmt.Fprintln(tw, "  Position\tValue\tNow\tTarget\tDrift\tPlan\t")
+	fmt.Fprintln(tw, "  Position\tISIN\tValue\tNow\tTarget\tDrift\tPlan\t")
 	for i := range in.Positions {
 		p := in.Positions[i]
 		if p.WindDown {
-			fmt.Fprintf(tw, "  %s\t%s\t—\t—\t—\tfrozen\t\n", p.Name, formatEuro(in.Values[i]))
+			fmt.Fprintf(tw, "  %s\t%s\t%s\t—\t—\t—\tfrozen\t\n", p.Name, p.ISIN, formatEuro(in.Values[i]))
 			continue
 		}
 		if activePool == 0 {
 			// Fresh portfolio: current weight is undefined (0/0), so there is
 			// nothing to drift from yet. The plan is still a valid target split.
-			fmt.Fprintf(tw, "  %s\t%s\t—\t%.0f%%\t—\t%d €\t\n",
-				p.Name, formatEuro(in.Values[i]), p.TargetPct, plan.Monthly[i])
+			fmt.Fprintf(tw, "  %s\t%s\t%s\t—\t%.0f%%\t—\t%d €\t\n",
+				p.Name, p.ISIN, formatEuro(in.Values[i]), p.TargetPct, plan.Monthly[i])
 			continue
 		}
 		nowPct := 100 * float64(in.Values[i]) / float64(activePool)
 		drift := nowPct - p.TargetPct
-		fmt.Fprintf(tw, "  %s\t%s\t%.1f%%\t%.0f%%\t%+.1fpp\t%d €\t\n",
-			p.Name, formatEuro(in.Values[i]), nowPct, p.TargetPct, drift, plan.Monthly[i])
+		fmt.Fprintf(tw, "  %s\t%s\t%s\t%.1f%%\t%.0f%%\t%+.1fpp\t%d €\t\n",
+			p.Name, p.ISIN, formatEuro(in.Values[i]), nowPct, p.TargetPct, drift, plan.Monthly[i])
 	}
 	tw.Flush()
 
