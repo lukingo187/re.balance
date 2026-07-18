@@ -1,0 +1,14 @@
+      max drift (pp)
+    5 │●     
+      │ ●    
+      │  ●●  
+      │    ●●
+      │      
+      │      
+      │      
+      │      
+  0.5 ├╌╌╌╌╌╌  tolerance ±0.5pp
+    0 │      
+     └──┬──┬
+        3  6
+does not converge within 6 months

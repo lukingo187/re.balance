@@ -1,0 +1,14 @@
+      max drift (pp)
+    8 │●           
+      │            
+      │ ●          
+      │            
+      │  ●         
+      │            
+      │   ●        
+      │    ●●      
+  0.5 ├╌╌╌╌╌╌●●◆╌╌╌  tolerance ±0.5pp
+    0 │         ◆◆◆
+     └──┬──┬──┬──┬
+        3  6  9 12
+converges to ±0.5pp at month 9 ✓
