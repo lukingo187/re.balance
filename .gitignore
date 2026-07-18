@@ -1,0 +1,9 @@
+# Compiled binary (built from ./cmd/rebal)
+/rebal
+
+# Test & coverage artifacts
+*.test
+*.out
+
+# macOS
+.DS_Store
