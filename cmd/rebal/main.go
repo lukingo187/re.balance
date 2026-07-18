@@ -19,6 +19,9 @@ func newRootCmd() *cobra.Command {
 		Short:   "re.balance — savings-plan rebalancer",
 		Long:    "re.balance splits a fixed monthly amount across your ETF positions so the\nportfolio converges back to its target weights over a chosen horizon — without\never selling.",
 		Version: version,
+		// Usage is help, not an error report: don't dump it when a command
+		// returns a runtime error (bad value, validation failure, etc.).
+		SilenceUsage: true,
 		// Subcommands land here as the milestones in rebalance-spec.md §10 are
 		// completed. With no args this will launch the TUI (milestone 6+); until
 		// then it prints help.
@@ -31,7 +34,7 @@ func newRootCmd() *cobra.Command {
 	root.PersistentFlags().String("state", "", "path to state.json")
 	root.PersistentFlags().Bool("no-color", false, "disable colour output")
 
-	root.AddCommand(newPlanCmd())
+	root.AddCommand(newPlanCmd(), newSetCmd(), newCheckCmd(), newAddCmd(), newRmCmd())
 
 	return root
 }
