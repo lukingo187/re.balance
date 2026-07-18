@@ -31,6 +31,8 @@ func newRootCmd() *cobra.Command {
 	root.PersistentFlags().String("state", "", "path to state.json")
 	root.PersistentFlags().Bool("no-color", false, "disable colour output")
 
+	root.AddCommand(newPlanCmd())
+
 	return root
 }
 
