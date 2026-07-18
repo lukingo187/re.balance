@@ -11,7 +11,7 @@ import (
 
 func newRmCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "rm <ISIN|name> [--scale | --to NAME]",
+		Use:   "rm <ISIN> [--scale | --to ISIN]",
 		Short: "Compute the target set after removing a position (prints, does not write)",
 		Long: "Work out new targets after removing a position, giving its share back via\n" +
 			"--scale or --to, and print the result to paste into config.toml.",
@@ -19,15 +19,15 @@ func newRmCmd() *cobra.Command {
 		RunE: runRm,
 	}
 	cmd.Flags().Bool("scale", false, "rescale remaining targets proportionally to fill 100")
-	cmd.Flags().String("to", "", "give the freed target to this one position")
+	cmd.Flags().String("to", "", "give the freed target to this position (by ISIN)")
 	return cmd
 }
 
 func runRm(cmd *cobra.Command, args []string) error {
-	key := strings.TrimSpace(args[0])
+	key := strings.ToUpper(strings.TrimSpace(args[0]))
 	scale, _ := cmd.Flags().GetBool("scale")
 	to, _ := cmd.Flags().GetString("to")
-	to = strings.TrimSpace(to)
+	to = strings.ToUpper(strings.TrimSpace(to))
 
 	cfg, err := loadConfig(cmd)
 	if err != nil {
@@ -38,16 +38,16 @@ func runRm(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Find the position to remove by ISIN or name.
+	// Find the position to remove by ISIN.
 	removeIdx := -1
 	for i, p := range cfg.Positions {
-		if strings.EqualFold(p.ISIN, key) || strings.EqualFold(p.Name, key) {
+		if strings.EqualFold(p.ISIN, key) {
 			removeIdx = i
 			break
 		}
 	}
 	if removeIdx < 0 {
-		return fmt.Errorf("no position matches %q", key)
+		return fmt.Errorf("no position matches ISIN %q", key)
 	}
 	removed := cfg.Positions[removeIdx]
 
@@ -61,13 +61,13 @@ func runRm(cmd *cobra.Command, args []string) error {
 	}
 
 	// Remaining active positions and their targets, in order.
-	var names []string
+	var isins []string
 	var targets []float64
 	for i, p := range cfg.Positions {
 		if i == removeIdx || p.WindDown {
 			continue
 		}
-		names = append(names, p.Name)
+		isins = append(isins, p.ISIN)
 		targets = append(targets, p.Target)
 	}
 	if len(targets) == 0 {
@@ -78,9 +78,9 @@ func runRm(cmd *cobra.Command, args []string) error {
 	case scale:
 		targets = config.Scale(targets, 100)
 	case to != "":
-		idx := indexByName(names, to)
+		idx := indexByISIN(isins, to)
 		if idx < 0 {
-			return fmt.Errorf("--to names no active position: %q", to)
+			return fmt.Errorf("--to matches no active position (by ISIN): %q", to)
 		}
 		targets[idx] += removed.Target
 	default:

@@ -21,7 +21,7 @@ func newAddCmd() *cobra.Command {
 	cmd.Flags().String("isin", "", "position ISIN (required)")
 	cmd.Flags().Float64("target", 0, "target percentage for the new position (required)")
 	cmd.Flags().Bool("scale", false, "rescale existing targets proportionally to make room")
-	cmd.Flags().String("from", "", "take the whole target from this one position")
+	cmd.Flags().String("from", "", "take the whole target from this one position (by ISIN)")
 	cmd.Flags().Int("min", -1, "monthly floor for the new position (default: config default)")
 	return cmd
 }
@@ -34,7 +34,9 @@ func runAdd(cmd *cobra.Command, _ []string) error {
 	from, _ := cmd.Flags().GetString("from")
 	minFlag, _ := cmd.Flags().GetInt("min")
 
-	name, isin, from = strings.TrimSpace(name), strings.ToUpper(strings.TrimSpace(isin)), strings.TrimSpace(from)
+	name = strings.TrimSpace(name)
+	isin = strings.ToUpper(strings.TrimSpace(isin))
+	from = strings.ToUpper(strings.TrimSpace(from))
 	if name == "" || isin == "" || target <= 0 {
 		return fmt.Errorf("--name, --isin and a positive --target are required")
 	}
@@ -49,11 +51,11 @@ func runAdd(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Existing active positions, in order.
-	var activeNames []string
+	var activeISINs []string
 	var activeTargets []float64
 	for _, p := range cfg.Positions {
 		if !p.WindDown {
-			activeNames = append(activeNames, p.Name)
+			activeISINs = append(activeISINs, p.ISIN)
 			activeTargets = append(activeTargets, p.Target)
 		}
 	}
@@ -66,14 +68,14 @@ func runAdd(cmd *cobra.Command, _ []string) error {
 	case scale:
 		finalTargets = append(config.Scale(activeTargets, 100-target), target)
 	case from != "":
-		idx := indexByName(activeNames, from)
+		idx := indexByISIN(activeISINs, from)
 		if idx < 0 {
-			return fmt.Errorf("--from names no active position: %q", from)
+			return fmt.Errorf("--from matches no active position (by ISIN): %q", from)
 		}
 		adjusted := append([]float64(nil), activeTargets...)
 		adjusted[idx] -= target
 		if adjusted[idx] <= 0 {
-			return fmt.Errorf("taking %.1f from %q would drive it to %.1f (must stay > 0)",
+			return fmt.Errorf("taking %.1f from %s would drive it to %.1f (must stay > 0)",
 				target, from, adjusted[idx])
 		}
 		finalTargets = append(adjusted, target)
@@ -167,9 +169,10 @@ func convergenceHorizon(in rebal.Input, tol float64, max int) (int, bool) {
 	return 0, false
 }
 
-func indexByName(names []string, name string) int {
-	for i, n := range names {
-		if strings.EqualFold(n, name) {
+// indexByISIN finds the position of an ISIN (case-insensitive), or -1.
+func indexByISIN(isins []string, isin string) int {
+	for i, s := range isins {
+		if strings.EqualFold(s, isin) {
 			return i
 		}
 	}
