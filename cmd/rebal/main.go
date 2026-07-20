@@ -34,6 +34,11 @@ func newRootCmd() *cobra.Command {
 	root.PersistentFlags().String("state", "", "path to state.json")
 	root.PersistentFlags().Bool("no-color", false, "disable colour output")
 
+	// Keep Cobra's auto-generated `completion` command working (so `rebal
+	// completion zsh` still emits a script) but drop it from the help listing —
+	// it's noise in a six-command tool.
+	root.CompletionOptions.HiddenDefaultCmd = true
+
 	root.AddCommand(newPlanCmd(), newSetCmd(), newCheckCmd(), newAddCmd(), newRmCmd(), newSweepCmd())
 
 	return root
