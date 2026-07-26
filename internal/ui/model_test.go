@@ -149,6 +149,30 @@ func TestHorizonDriftReadout(t *testing.T) {
 	}
 }
 
+// TestResetWhatIf: reset reverts monthly and horizon to the config defaults.
+func TestResetWhatIf(t *testing.T) {
+	m := sampleModel(t) // config: monthly 1000, horizon 6
+	m.monthly = 1500
+	m.setHorizon(24)
+	m.resetWhatIf()
+	if m.monthly != 1000 || m.horizon != 6 {
+		t.Fatalf("after reset monthly=%d horizon=%d, want 1000/6", m.monthly, m.horizon)
+	}
+}
+
+// TestResult: a valid config yields a plan to print on quit; an invalid one does not.
+func TestResult(t *testing.T) {
+	m := sampleModel(t)
+	if _, plan, ok := m.Result(); !ok || len(plan.Monthly) != 3 {
+		t.Fatalf("valid config: ok=%v plan len=%d", ok, len(plan.Monthly))
+	}
+	m.monthly = 0 // below floors -> invalid
+	m.recompute()
+	if _, _, ok := m.Result(); ok {
+		t.Fatal("invalid config should not yield a printable result")
+	}
+}
+
 // TestEditValuePersists: committing a position value updates state and writes it.
 func TestEditValuePersists(t *testing.T) {
 	m := sampleModel(t)

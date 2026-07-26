@@ -40,7 +40,16 @@ func newRootCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return ui.Run(cfg, st, cfgPath, statePath)
+			final, err := ui.Run(cfg, st, cfgPath, statePath)
+			if err != nil {
+				return err
+			}
+			// Print the plan the user settled on, so the values are ready to
+			// enter at the broker once the TUI's alt-screen is gone.
+			if in, plan, ok := final.Result(); ok {
+				printPlan(cmd.OutOrStdout(), in, plan)
+			}
+			return nil
 		},
 	}
 

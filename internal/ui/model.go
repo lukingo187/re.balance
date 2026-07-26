@@ -157,8 +157,25 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.full = !m.full
 	case key.Matches(msg, m.keys.Save):
 		m.saveDefaults()
+	case key.Matches(msg, m.keys.Reset):
+		m.resetWhatIf()
 	}
 	return m, nil
+}
+
+// resetWhatIf reverts the monthly amount and horizon to the saved config
+// defaults — the counterpart to saveDefaults after exploring.
+func (m *Model) resetWhatIf() {
+	m.monthly = m.cfg.Settings.MonthlyTotal
+	m.horizon = m.cfg.Settings.HorizonMonths
+	switch {
+	case m.horizon < 1:
+		m.horizon = 1
+	case m.horizon > m.maxHorizon:
+		m.horizon = m.maxHorizon
+	}
+	m.status = "reset to saved defaults"
+	m.recompute()
 }
 
 // setHorizon moves the horizon cursor, clamped to [1, maxHorizon], and re-solves.
@@ -257,8 +274,19 @@ func (m *Model) saveDefaults() {
 	m.status = fmt.Sprintf("saved defaults — %d €/month · %d-month horizon", m.monthly, m.horizon)
 }
 
-// Run launches the program over an already-loaded config and state.
-func Run(cfg config.Config, st state.State, cfgPath, statePath string) error {
-	_, err := tea.NewProgram(New(cfg, st, cfgPath, statePath)).Run()
-	return err
+// Result returns the solver input and plan the session ended on, so the caller
+// can print it after the TUI exits. ok is false when the config is invalid.
+func (m Model) Result() (rebal.Input, rebal.Plan, bool) {
+	if len(m.issues) > 0 {
+		return rebal.Input{}, rebal.Plan{}, false
+	}
+	return m.solverInput(), m.plan, true
+}
+
+// Run launches the program over an already-loaded config and state, returning the
+// final model so the caller can print the plan the user settled on.
+func Run(cfg config.Config, st state.State, cfgPath, statePath string) (Model, error) {
+	final, err := tea.NewProgram(New(cfg, st, cfgPath, statePath)).Run()
+	m, _ := final.(Model)
+	return m, err
 }

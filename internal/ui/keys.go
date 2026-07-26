@@ -15,6 +15,7 @@ type keyMap struct {
 	Home      key.Binding
 	End       key.Binding
 	Save      key.Binding
+	Reset     key.Binding
 	Help      key.Binding
 	Quit      key.Binding
 }
@@ -31,19 +32,20 @@ func newKeyMap() keyMap {
 		Home:      key.NewBinding(key.WithKeys("home")),
 		End:       key.NewBinding(key.WithKeys("end")),
 		Save:      key.NewBinding(key.WithKeys("w"), key.WithHelp("w", "save defaults")),
+		Reset:     key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reset")),
 		Help:      key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
 		Quit:      key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
 	}
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Next, k.Edit, k.Left, k.Save, k.Quit}
+	return []key.Binding{k.Next, k.Edit, k.Left, k.Save, k.Reset, k.Quit}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Next, k.Prev, k.Edit},
 		{k.Left, k.Home, k.End},
-		{k.Save, k.Help, k.Quit},
+		{k.Save, k.Reset, k.Help, k.Quit},
 	}
 }
