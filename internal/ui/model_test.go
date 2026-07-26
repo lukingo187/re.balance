@@ -107,6 +107,26 @@ func TestHorizonClamp(t *testing.T) {
 	}
 }
 
+// TestHorizonDriftReadout: the projected-drift readout tracks the horizon — a
+// short horizon shows a bigger drift than a long one.
+func TestHorizonDriftReadout(t *testing.T) {
+	m := sampleModel(t)
+	m.setHorizon(2)
+	short := m.horizonDrift()
+	m.setHorizon(18)
+	long := m.horizonDrift()
+
+	if short == "" || long == "" {
+		t.Fatal("readout should be non-empty for a valid config")
+	}
+	if short == long {
+		t.Fatal("readout should differ between horizons")
+	}
+	if m.plan.MaxDriftPP > m.cfg.Settings.TolerancePP {
+		t.Fatalf("at horizon 18 drift %.2f should be within tolerance", m.plan.MaxDriftPP)
+	}
+}
+
 // TestEditValuePersists: committing a position value updates state and writes it.
 func TestEditValuePersists(t *testing.T) {
 	m := sampleModel(t)

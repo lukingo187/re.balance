@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -133,8 +134,22 @@ func (m Model) controlsView() string {
 		mStyle.Render(fmt.Sprintf("[ %d ]", m.monthly)) + m.styles.Dim.Render(" €")
 	horizon := m.styles.Dim.Render("Horizon ") +
 		m.styles.FieldFocus.Render(fmt.Sprintf("%d", m.horizon)) +
-		m.styles.Dim.Render(" months  ←/→")
+		m.styles.Dim.Render(" months") + m.horizonDrift() + m.styles.Dim.Render("  ←/→")
 	return monthly + m.styles.Dim.Render("     ") + horizon
+}
+
+// horizonDrift is the projected max drift at the selected horizon — the number
+// that answers "if I aim for this many months, how close do I get?". It updates
+// as the cursor moves. Empty when the config is invalid (the banner covers that).
+func (m Model) horizonDrift() string {
+	if len(m.issues) > 0 || math.IsNaN(m.plan.MaxDriftPP) {
+		return ""
+	}
+	txt := fmt.Sprintf("±%.2fpp", m.plan.MaxDriftPP)
+	if m.plan.MaxDriftPP <= m.cfg.Settings.TolerancePP {
+		return m.styles.Dim.Render(" → ") + m.styles.DriftDown.Render(txt+" ✓")
+	}
+	return m.styles.Dim.Render(" → ") + m.styles.DriftUp.Render(txt)
 }
 
 // editView is the inline field shown while editing a value or the monthly amount.
