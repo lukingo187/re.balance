@@ -91,20 +91,39 @@ Two files, deliberately separate:
 - **`config.toml`** — settings and positions. Managed by `rebal`; a `# Managed by re.balance` header
   marks it. Located at `$XDG_CONFIG_HOME/rebal/config.toml` (or your OS config dir), or a
   `config.toml` in the current directory, or `--config PATH`.
-- **`state.json`** — current market values (per ISIN, in cents), rewritten freely, with a per-day
-  history. At `$XDG_STATE_HOME/rebal/state.json` (or `~/.local/state/rebal/`), a local `state.json`,
-  or `--state PATH`.
+- **`state.json`** — current market values (per ISIN, in cents), rewritten freely. At
+  `$XDG_STATE_HOME/rebal/state.json` (or `~/.local/state/rebal/`), a local `state.json`, or
+  `--state PATH`.
 
 A new ISIN starts at 0 €; a deleted one becomes an ignored orphan — so adding and removing positions
 is free, with no migration step. See [`config.example.toml`](config.example.toml) for the format.
+
+## The target horizon (important)
+
+There are two "horizon" numbers, and they mean different things:
+
+- **Target horizon** — an **input you choose**: *"I want to be back on target within N months."* It's
+  not just a readout — it **determines the monthly plan**. A *short* horizon front-loads corrections
+  (aggressive catch-up into the underweight positions); a *long* horizon spreads them out (gentler,
+  more even). So it's a real strategic choice: *how aggressively do I rebalance?*
+- **Earliest on target** — a **computed result** shown under the chart (`earliest on target: month 4`):
+  the *soonest* month at which you'd actually fall within tolerance.
+
+They're related but distinct. Because drift falls as the horizon grows (more months = more total
+contributed = fuller correction by the deadline), the earliest-on-target month is a threshold:
+
+> **Pick a target horizon at or after the earliest-on-target month.** That month = "balanced as fast as
+> possible"; longer = "I'm patient, give me a gentler split"; shorter = "won't make it in time."
+
+In the TUI the drift readout next to the horizon (`Target horizon 6 months → ±1.20pp`) tells you exactly
+where *your* choice lands, updating as you move it.
 
 ## How it works
 
 The math is a separable-convex resource allocation: ignoring growth (contributions are linear), the
 optimal integer split that minimises squared deviation from target end-values is "give each euro to
 whoever is furthest below target." It's exact, deterministic, and costs ~a thousand comparisons — no
-heap, no heuristics. **Convergence horizon** is just the first month where max drift falls within
-your tolerance. See [`rebalance-spec.md`](rebalance-spec.md) for the full design, and
+heap, no heuristics. See [`rebalance-spec.md`](rebalance-spec.md) for the full design, and
 [`docs/wind-down-positions.md`](docs/wind-down-positions.md) for the wind-down rationale.
 
 ## TUI
@@ -114,17 +133,27 @@ monthly/horizon controls and the horizon chart, in one view. It's a thin skin ov
 and config the CLI uses — it edits the *what-if* knobs and re-solves instantly, while config
 *structure* (adding positions, changing targets, wind-down) stays a CLI-only operation.
 
-- `←`/`→` moves the horizon (`shift` jumps 6, `home`/`end` to the ends) — the plan re-solves live.
-- `tab` moves focus; `e` edits the focused position's current value or the monthly amount.
-- Current values **persist** to `state.json`; the monthly amount is a transient what-if. `w` saves the
-  current monthly + horizon as your new config defaults.
+| Key | Action |
+|---|---|
+| `←` / `→` | move the target horizon (`shift` jumps 6, `home`/`end` to the ends) — re-solves live |
+| `↑` / `↓`, `tab` / `shift+tab` | move focus between positions and the monthly field |
+| `e` | edit the focused position's current value, or the monthly amount |
+| `w` | save the current monthly + horizon as config defaults |
+| `r` | reset monthly + horizon back to the saved defaults |
+| `?` | toggle full help · `q` quit |
 
-Mouse support and final polish are the remaining milestones.
+Current values **persist** to `state.json` (they're facts); the monthly amount and horizon are
+transient what-ifs (use `w` to make them defaults). On quit, the plan you settled on prints to the
+terminal — the €/position values ready to enter at your broker.
+
+Config *structure* stays CLI-only by design, and the TUI never shells out to the CLI: both are
+independent skins calling the same `internal/rebal` engine and `internal/config` directly.
 
 ## Status
 
-The engine (`internal/rebal`) and chart renderer (`internal/ui/chart`) are pure standard-library
-packages; the CLI is complete; the TUI is under construction (above).
+Complete. The engine (`internal/rebal`) and chart renderer (`internal/ui/chart`) are pure
+standard-library packages; the CLI and the TUI are both done. Mouse support (the one unbuilt spec
+milestone) was deliberately skipped — the keyboard TUI is fully operable and mouse added little.
 
 ## Development
 
