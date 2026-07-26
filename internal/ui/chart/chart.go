@@ -176,14 +176,16 @@ func labelRow(x []int, n int) string {
 	return fmt.Sprintf("%s %s\n", strings.Repeat(" ", gutter), string(row))
 }
 
-// summary is the one-line verdict under the chart.
+// summary is the one-line verdict under the chart: the earliest horizon that
+// lands within tolerance — the soonest you can be on target, distinct from the
+// horizon you choose to aim for.
 func summary(s Series, o Opts, styleConverged, styleDrift func(string) string) string {
 	for c := range s.X {
 		if s.Y[c] <= o.Tolerance {
-			return styleConverged(fmt.Sprintf("converges to ±%spp at month %d ✓", trim(s.Y[c]), s.X[c])) + "\n"
+			return styleConverged(fmt.Sprintf("earliest on target: month %d (±%spp) ✓", s.X[c], trim(s.Y[c]))) + "\n"
 		}
 	}
-	return styleDrift(fmt.Sprintf("does not converge within %d months", s.X[len(s.X)-1])) + "\n"
+	return styleDrift(fmt.Sprintf("not on target within %d months", s.X[len(s.X)-1])) + "\n"
 }
 
 func indexOf(xs []int, v int) int {

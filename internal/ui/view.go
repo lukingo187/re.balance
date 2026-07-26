@@ -132,7 +132,7 @@ func (m Model) controlsView() string {
 	}
 	monthly := m.styles.Dim.Render("Monthly ") +
 		mStyle.Render(fmt.Sprintf("[ %d ]", m.monthly)) + m.styles.Dim.Render(" €")
-	horizon := m.styles.Dim.Render("Horizon ") +
+	horizon := m.styles.Dim.Render("Target horizon ") +
 		m.styles.FieldFocus.Render(fmt.Sprintf("%d", m.horizon)) +
 		m.styles.Dim.Render(" months") + m.horizonDrift() + m.styles.Dim.Render("  ←/→")
 	return monthly + m.styles.Dim.Render("     ") + horizon

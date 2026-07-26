@@ -40,7 +40,7 @@ func TestViewRenders(t *testing.T) {
 	m.width = 64
 	content := m.View().Content
 
-	for _, want := range []string{"re.balance", "total", "Position", "Prime Global", "Drift", "Monthly", "Horizon", "max drift", "quit"} {
+	for _, want := range []string{"re.balance", "total", "Position", "Prime Global", "Drift", "Monthly", "Target horizon", "max drift", "quit"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("view missing %q\n---\n%s", want, content)
 		}

@@ -77,7 +77,7 @@ func TestMarkCalledPerColumn(t *testing.T) {
 
 func TestSummaryConverges(t *testing.T) {
 	out := Render(decaySeries(), Opts{Tolerance: 0.5})
-	if !strings.Contains(out, "converges to ±0.5pp at month 9 ✓") {
+	if !strings.Contains(out, "earliest on target: month 9 (±0.5pp) ✓") {
 		t.Errorf("missing convergence summary; got:\n%s", out)
 	}
 }
