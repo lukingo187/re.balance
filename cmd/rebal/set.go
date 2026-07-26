@@ -35,7 +35,7 @@ func newSetCmd() *cobra.Command {
 				return fmt.Errorf("saving state: %w", err)
 			}
 
-			out := fmt.Sprintf("set %s = %s", isin, formatEuro(cents))
+			out := fmt.Sprintf("%sset %s = %s", margin, isin, formatEuro(cents))
 			if !isinInConfig(cmd, isin) {
 				out += "  (note: no position with this ISIN in config — stored anyway)"
 			}

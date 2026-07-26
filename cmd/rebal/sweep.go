@@ -46,20 +46,11 @@ func newSweepCmd() *cobra.Command {
 			}
 
 			out := cmd.OutOrStdout()
-			fmt.Fprintf(out, "\n  %d €/month · tolerance ±%spp\n\n", in.Monthly, trimTol(cfg.Settings.TolerancePP))
+			fmt.Fprintf(out, "\n%s%d €/month · tolerance %s\n\n", margin, in.Monthly, formatTol(cfg.Settings.TolerancePP))
 			fmt.Fprintln(out, chart.Render(s, chart.Opts{Tolerance: cfg.Settings.TolerancePP}))
 			return nil
 		},
 	}
 	cmd.Flags().Int("max", 0, "highest horizon to sweep (default from config)")
 	return cmd
-}
-
-// trimTol formats a tolerance like 0.5 without a trailing ".0".
-func trimTol(f float64) string {
-	s := fmt.Sprintf("%.1f", f)
-	if len(s) > 2 && s[len(s)-2:] == ".0" {
-		return s[:len(s)-2]
-	}
-	return s
 }

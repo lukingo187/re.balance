@@ -39,7 +39,11 @@ func newRootCmd() *cobra.Command {
 	// it's noise in a six-command tool.
 	root.CompletionOptions.HiddenDefaultCmd = true
 
-	root.AddCommand(newPlanCmd(), newSetCmd(), newCheckCmd(), newAddCmd(), newRmCmd(), newSweepCmd())
+	root.AddCommand(
+		newPlanCmd(), newSetCmd(), newCheckCmd(), newSweepCmd(),
+		newAddCmd(), newRmCmd(), newEditCmd(), newSettingsCmd(),
+		newFreezeCmd(), newUnfreezeCmd(),
+	)
 
 	return root
 }

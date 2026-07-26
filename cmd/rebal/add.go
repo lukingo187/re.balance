@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"strings"
+	"io"
 
 	"github.com/lukingo187/re.balance/internal/config"
 	"github.com/lukingo187/re.balance/internal/rebal"
@@ -11,18 +11,22 @@ import (
 
 func newAddCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "add --name NAME --isin ISIN --target T [--scale | --from NAME] [--min M]",
-		Short: "Compute the target set after adding a position (prints, does not write)",
-		Long: "Work out new targets after adding a position, make room via --scale or\n" +
-			"--from, and print the [[positions]] block to paste into config.toml.",
+		Use:   "add --name NAME --isin ISIN --target T [--scale | --from ISIN[=pp]...] [--min M]",
+		Short: "Add a position, making room for its target, and write config",
+		Long: "Add a position and rebalance targets to fit it. Make room by rescaling the\n" +
+			"others (--scale) or by taking explicit amounts from named positions\n" +
+			"(--from ISIN=pp, repeatable; the amounts must sum to the new target). A bare\n" +
+			"--from ISIN takes the whole target from that one position.\n\n" +
+			"Writes config.toml by default; use --dry-run to preview without writing.",
 		RunE: runAdd,
 	}
 	cmd.Flags().String("name", "", "position name (required)")
 	cmd.Flags().String("isin", "", "position ISIN (required)")
 	cmd.Flags().Float64("target", 0, "target percentage for the new position (required)")
 	cmd.Flags().Bool("scale", false, "rescale existing targets proportionally to make room")
-	cmd.Flags().String("from", "", "take the whole target from this one position (by ISIN)")
+	cmd.Flags().StringArray("from", nil, "take target from this position: ISIN=pp (repeatable) or a bare ISIN")
 	cmd.Flags().Int("min", -1, "monthly floor for the new position (default: config default)")
+	cmd.Flags().Bool("dry-run", false, "print the result but do not write config")
 	return cmd
 }
 
@@ -31,12 +35,10 @@ func runAdd(cmd *cobra.Command, _ []string) error {
 	isin, _ := cmd.Flags().GetString("isin")
 	target, _ := cmd.Flags().GetFloat64("target")
 	scale, _ := cmd.Flags().GetBool("scale")
-	from, _ := cmd.Flags().GetString("from")
+	fromEntries, _ := cmd.Flags().GetStringArray("from")
 	minFlag, _ := cmd.Flags().GetInt("min")
+	dry, _ := cmd.Flags().GetBool("dry-run")
 
-	name = strings.TrimSpace(name)
-	isin = strings.ToUpper(strings.TrimSpace(isin))
-	from = strings.ToUpper(strings.TrimSpace(from))
 	if name == "" || isin == "" || target <= 0 {
 		return fmt.Errorf("--name, --isin and a positive --target are required")
 	}
@@ -50,112 +52,49 @@ func runAdd(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	// Existing active positions, in order.
-	var activeISINs []string
-	var activeTargets []float64
-	for _, p := range cfg.Positions {
-		if !p.WindDown {
-			activeISINs = append(activeISINs, p.ISIN)
-			activeTargets = append(activeTargets, p.Target)
-		}
+	sources, err := parseSources(fromEntries, target)
+	if err != nil {
+		return err
+	}
+	r, err := redistribution(scale, sources)
+	if err != nil {
+		return err
 	}
 
-	// Make room, producing the full new active target list (existing + new).
-	var finalTargets []float64
-	switch {
-	case len(activeTargets) == 0:
-		finalTargets = []float64{target}
-	case scale:
-		finalTargets = append(config.Scale(activeTargets, 100-target), target)
-	case from != "":
-		idx := indexByISIN(activeISINs, from)
-		if idx < 0 {
-			return fmt.Errorf("--from matches no active position (by ISIN): %q", from)
-		}
-		adjusted := append([]float64(nil), activeTargets...)
-		adjusted[idx] -= target
-		if adjusted[idx] <= 0 {
-			return fmt.Errorf("taking %.1f from %s would drive it to %.1f (must stay > 0)",
-				target, from, adjusted[idx])
-		}
-		finalTargets = append(adjusted, target)
-	default:
-		return fmt.Errorf("adding to an existing portfolio needs --scale or --from NAME")
-	}
-	finalTargets = config.RoundTargets(finalTargets)
-	newTarget := finalTargets[len(finalTargets)-1]
-
-	// Build the trial config (existing targets updated, new position appended)
-	// and refuse if it would break validation — chiefly the never-converges rule.
-	trial := trialConfig(cfg, finalTargets, name, isin, minFlag)
-	if issues := rebal.Validate(trial.ToInput(st.Values)); len(issues) > 0 {
-		out := cmd.OutOrStdout()
-		fmt.Fprintln(out, "refusing — the new target set is invalid:")
-		for _, is := range issues {
-			fmt.Fprintf(out, "  %s: %s\n", is.Severity, is.Message)
-		}
-		return fmt.Errorf("aborted")
+	var min *int
+	if minFlag >= 0 {
+		min = &minFlag
 	}
 
-	printAddResult(cmd, trial, name, isin, newTarget, minFlag, st.Values)
-	return nil
+	after, err := config.AddPosition(cfg, name, isin, target, min, r)
+	if err != nil {
+		return err
+	}
+	if issues := rebal.Validate(after.ToInput(st.Values)); len(issues) > 0 {
+		return refuseInvalid(cmd, issues)
+	}
+
+	return applyConfig(cmd, cfg, after, dry, func(w io.Writer) {
+		printConvergence(w, after, normKey(isin), name, st.Values)
+	})
 }
 
-// trialConfig returns cfg with active targets replaced by finalTargets[:n-1] and
-// a new position (finalTargets[n-1]) appended.
-func trialConfig(cfg config.Config, finalTargets []float64, name, isin string, minFlag int) config.Config {
-	trial := cfg
-	trial.Positions = make([]config.Position, 0, len(cfg.Positions)+1)
-	ai := 0
-	for _, p := range cfg.Positions {
-		if !p.WindDown {
-			p.Target = finalTargets[ai]
-			ai++
-		}
-		trial.Positions = append(trial.Positions, p)
-	}
-	newPos := config.Position{Name: name, ISIN: isin, Target: finalTargets[len(finalTargets)-1]}
-	if minFlag >= 0 {
-		newPos.MinMonthly = &minFlag
-	}
-	trial.Positions = append(trial.Positions, newPos)
-	return trial
-}
-
-func printAddResult(cmd *cobra.Command, trial config.Config, name, isin string, newTarget float64, minFlag int, values map[string]int64) {
-	out := cmd.OutOrStdout()
-
-	fmt.Fprintf(out, "\nAdd this block to your config.toml:\n\n")
-	fmt.Fprintln(out, "[[positions]]")
-	fmt.Fprintf(out, "name   = %q\n", name)
-	fmt.Fprintf(out, "isin   = %q\n", isin)
-	fmt.Fprintf(out, "target = %s\n", trimFloat(newTarget))
-	if minFlag >= 0 {
-		fmt.Fprintf(out, "min_monthly = %d\n", minFlag)
-	}
-
-	fmt.Fprintln(out, "\nNew target set:")
-	for _, p := range trial.Positions {
-		if p.WindDown {
-			continue
-		}
-		fmt.Fprintf(out, "  %-20s %s\n", p.Name, trimFloat(p.Target))
-	}
-
-	// Convergence horizon for the fresh position, which starts at 0 €.
-	in := trial.ToInput(values)
+// printConvergence reports when the (usually fresh, 0 €) position catches up to
+// target across the whole portfolio.
+func printConvergence(w io.Writer, cfg config.Config, isin, name string, values map[string]int64) {
+	in := cfg.ToInput(values)
 	if in.Months < 1 {
 		in.Months = 1
 	}
-	tol := trial.Settings.TolerancePP
-	max := trial.Settings.MaxHorizon
+	tol := cfg.Settings.TolerancePP
+	max := cfg.Settings.MaxHorizon
 	if max < 1 {
 		max = 36
 	}
 	if n, ok := convergenceHorizon(in, tol, max); ok {
-		fmt.Fprintf(out, "\n%s starts at 0 € and converges to within ±%.1fpp at month %d.\n", name, tol, n)
+		fmt.Fprintf(w, "%s%s converges to within %s at month %d.\n", margin, name, formatTol(tol), n)
 	} else {
-		fmt.Fprintf(out, "\n%s does not converge within %d months at %d €/month.\n", name, max, in.Monthly)
+		fmt.Fprintf(w, "%s%s does not converge within %d months at %d €/month.\n", margin, name, max, in.Monthly)
 	}
 }
 
@@ -167,20 +106,4 @@ func convergenceHorizon(in rebal.Input, tol float64, max int) (int, bool) {
 		}
 	}
 	return 0, false
-}
-
-// indexByISIN finds the position of an ISIN (case-insensitive), or -1.
-func indexByISIN(isins []string, isin string) int {
-	for i, s := range isins {
-		if strings.EqualFold(s, isin) {
-			return i
-		}
-	}
-	return -1
-}
-
-// trimFloat renders a one-decimal target without a trailing ".0" (10.0 -> "10").
-func trimFloat(f float64) string {
-	s := fmt.Sprintf("%.1f", f)
-	return strings.TrimSuffix(s, ".0")
 }

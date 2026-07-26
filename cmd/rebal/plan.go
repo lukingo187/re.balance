@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"text/tabwriter"
 
@@ -90,12 +89,5 @@ func printPlan(w interface{ Write([]byte) (int, error) }, in rebal.Input, plan r
 	tw.Flush()
 
 	fmt.Fprintf(w, "\n  Projected max drift at month %d: %s\n\n",
-		in.Months, driftLabel(plan.MaxDriftPP))
-}
-
-func driftLabel(pp float64) string {
-	if math.IsNaN(pp) {
-		return "n/a"
-	}
-	return fmt.Sprintf("±%.2fpp", pp)
+		in.Months, formatPP(plan.MaxDriftPP))
 }
