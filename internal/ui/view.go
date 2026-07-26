@@ -2,28 +2,28 @@ package ui
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/lukingo187/re.balance/internal/money"
 	"github.com/lukingo187/re.balance/internal/rebal"
 	"github.com/lukingo187/re.balance/internal/ui/chart"
 )
 
 func (m Model) View() tea.View {
-	in := m.input()
+	in := m.solverInput()
 
 	var sections []string
 	if b := m.bannerView(); b != "" {
 		sections = append(sections, b, "")
 	}
-	sections = append(sections,
-		m.tableView(in), "",
-		m.controlsView(), "",
-		m.chartView(in),
-	)
+	sections = append(sections, m.tableView(in), "", m.controlsView())
+	if m.editing {
+		sections = append(sections, m.editView())
+	}
+	sections = append(sections, "", m.chartView(in))
 	if m.status != "" {
 		sections = append(sections, "", m.styles.Status.Render(m.status))
 	}
@@ -47,7 +47,7 @@ func (m Model) headerView(in rebal.Input, width int) string {
 		total += v
 	}
 	title := m.styles.Title.Render("re.balance")
-	right := m.styles.Total.Render(euro(total) + " total")
+	right := m.styles.Total.Render(money.Euro(total) + " total")
 	gap := width - lipgloss.Width(title) - lipgloss.Width(right)
 	if gap < 1 {
 		gap = 1
@@ -90,7 +90,7 @@ func (m Model) tableView(in rebal.Input) string {
 		if m.focus == i {
 			mark, nameStyle = "▸", m.styles.NameFocus
 		}
-		val := vcell{text: euro(in.Values[i]), style: m.styles.Value, right: true}
+		val := vcell{text: money.Euro(in.Values[i]), style: m.styles.Value, right: true}
 		dash := vcell{text: "—", style: m.styles.DriftZero, right: true}
 
 		row := []vcell{
@@ -122,21 +122,29 @@ func (m Model) tableView(in rebal.Input) string {
 	return renderCells(rows)
 }
 
-// controlsView is the monthly field and the horizon, each highlighted when
-// focused.
+// controlsView is the monthly field (highlighted when focused) and the horizon
+// (always accented — it's driven live by the arrow keys).
 func (m Model) controlsView() string {
-	mStyle, hStyle := m.styles.Field, m.styles.Value
-	if m.focus == m.focusMonthly() {
+	mStyle := m.styles.Field
+	if m.focus == m.focusMonthly() && !m.editing {
 		mStyle = m.styles.FieldFocus
-	}
-	if m.focus == m.focusChart() {
-		hStyle = m.styles.FieldFocus
 	}
 	monthly := m.styles.Dim.Render("Monthly ") +
 		mStyle.Render(fmt.Sprintf("[ %d ]", m.monthly)) + m.styles.Dim.Render(" €")
 	horizon := m.styles.Dim.Render("Horizon ") +
-		hStyle.Render(fmt.Sprintf("%d", m.horizon)) + m.styles.Dim.Render(" months")
+		m.styles.FieldFocus.Render(fmt.Sprintf("%d", m.horizon)) +
+		m.styles.Dim.Render(" months  ←/→")
 	return monthly + m.styles.Dim.Render("     ") + horizon
+}
+
+// editView is the inline field shown while editing a value or the monthly amount.
+func (m Model) editView() string {
+	label := "monthly amount"
+	if m.focus < len(m.cfg.Positions) {
+		label = m.cfg.Positions[m.focus].Name + " value"
+	}
+	return m.styles.FieldFocus.Render("edit "+label+": ") + m.input.View() +
+		m.styles.Dim.Render("   enter save · esc cancel")
 }
 
 // chartView renders the horizon chart with a marker at the current horizon.
@@ -212,28 +220,4 @@ func renderCells(rows [][]vcell) string {
 		lines[i] = strings.Join(parts, "  ")
 	}
 	return strings.Join(lines, "\n")
-}
-
-// euro renders int64 cents as EU-style money: 1245000 -> "12 450,00 €".
-func euro(cents int64) string {
-	neg := cents < 0
-	if neg {
-		cents = -cents
-	}
-	s := strconv.FormatInt(cents/100, 10)
-	var b strings.Builder
-	if lead := len(s) % 3; lead > 0 {
-		b.WriteString(s[:lead])
-	}
-	for i := len(s) % 3; i < len(s); i += 3 {
-		if b.Len() > 0 {
-			b.WriteByte(' ')
-		}
-		b.WriteString(s[i : i+3])
-	}
-	out := fmt.Sprintf("%s,%02d €", b.String(), cents%100)
-	if neg {
-		out = "-" + out
-	}
-	return out
 }

@@ -111,12 +111,15 @@ your tolerance. See [`rebalance-spec.md`](rebalance-spec.md) for the full design
 
 Run `rebal` with no arguments to open the single-screen TUI: your positions, the live plan, the
 monthly/horizon controls and the horizon chart, in one view. It's a thin skin over the same engine
-and config the CLI uses — it edits the *what-if* knobs (monthly amount, horizon, current values) and
-re-solves instantly, while config *structure* (adding positions, changing targets, wind-down) stays a
-CLI-only operation. `w` saves the current monthly/horizon as your new config defaults.
+and config the CLI uses — it edits the *what-if* knobs and re-solves instantly, while config
+*structure* (adding positions, changing targets, wind-down) stays a CLI-only operation.
 
-The static screen and `w`-save are in place; the live chart cursor (arrow-key horizon), inline value
-editing, and mouse support are the remaining milestones.
+- `←`/`→` moves the horizon (`shift` jumps 6, `home`/`end` to the ends) — the plan re-solves live.
+- `tab` moves focus; `e` edits the focused position's current value or the monthly amount.
+- Current values **persist** to `state.json`; the monthly amount is a transient what-if. `w` saves the
+  current monthly + horizon as your new config defaults.
+
+Mouse support and final polish are the remaining milestones.
 
 ## Status
 

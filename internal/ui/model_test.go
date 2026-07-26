@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"charm.land/bubbles/v2/textinput"
 
 	"github.com/lukingo187/re.balance/internal/config"
 	"github.com/lukingo187/re.balance/internal/state"
@@ -20,8 +23,15 @@ func sampleModel(t *testing.T) Model {
 		},
 	}
 	st := state.State{Values: map[string]int64{"AAA": 981800, "BBB": 488000, "CCC": 162900}}
-	path := filepath.Join(t.TempDir(), "config.toml")
-	return New(cfg, st, path, "")
+	dir := t.TempDir()
+	return New(cfg, st, filepath.Join(dir, "config.toml"), filepath.Join(dir, "state.json"))
+}
+
+// editField opens the field for the current focus and sets its text.
+func editField(m *Model, text string) {
+	m.input = textinput.New()
+	m.input.SetValue(text)
+	m.editing = true
 }
 
 // TestViewRenders checks the static screen composes and carries its key parts.
@@ -77,5 +87,78 @@ func TestRecomputeOnBadMonthly(t *testing.T) {
 	}
 	if m.bannerView() == "" {
 		t.Fatal("banner should be non-empty when there are issues")
+	}
+}
+
+// TestHorizonClamp: the cursor stays within [1, maxHorizon].
+func TestHorizonClamp(t *testing.T) {
+	m := sampleModel(t)
+	m.setHorizon(100)
+	if m.horizon != 36 {
+		t.Fatalf("horizon = %d, want clamped to 36", m.horizon)
+	}
+	m.setHorizon(0)
+	if m.horizon != 1 {
+		t.Fatalf("horizon = %d, want clamped to 1", m.horizon)
+	}
+	m.setHorizon(12)
+	if m.horizon != 12 {
+		t.Fatalf("horizon = %d, want 12", m.horizon)
+	}
+}
+
+// TestEditValuePersists: committing a position value updates state and writes it.
+func TestEditValuePersists(t *testing.T) {
+	m := sampleModel(t)
+	m.focus = 0 // Prime Global / AAA
+	editField(&m, "10000")
+
+	next, _ := m.commitEdit()
+	mm := next.(Model)
+	if mm.editing {
+		t.Fatal("should have left edit mode")
+	}
+	if mm.values["AAA"] != 1000000 {
+		t.Fatalf("AAA = %d, want 1000000 cents", mm.values["AAA"])
+	}
+	loaded, err := state.Load(mm.statePath)
+	if err != nil {
+		t.Fatalf("loading written state: %v", err)
+	}
+	if loaded.Values["AAA"] != 1000000 {
+		t.Fatalf("persisted AAA = %d, want 1000000", loaded.Values["AAA"])
+	}
+}
+
+// TestEditMonthlyTransient: committing monthly updates the what-if value but does
+// not write config.
+func TestEditMonthlyTransient(t *testing.T) {
+	m := sampleModel(t)
+	m.focus = m.focusMonthly()
+	editField(&m, "500")
+
+	next, _ := m.commitEdit()
+	mm := next.(Model)
+	if mm.monthly != 500 {
+		t.Fatalf("monthly = %d, want 500", mm.monthly)
+	}
+	if _, err := os.Stat(mm.cfgPath); err == nil {
+		t.Fatal("editing monthly wrote config — it should be transient")
+	}
+}
+
+// TestEditInvalidKeepsEditing: a bad amount is rejected without leaving the field.
+func TestEditInvalidKeepsEditing(t *testing.T) {
+	m := sampleModel(t)
+	m.focus = 0
+	editField(&m, "not-a-number")
+
+	next, _ := m.commitEdit()
+	mm := next.(Model)
+	if !mm.editing {
+		t.Fatal("should stay in edit mode on a bad amount")
+	}
+	if !strings.Contains(mm.status, "invalid") {
+		t.Fatalf("status = %q, want an invalid-amount message", mm.status)
 	}
 }
