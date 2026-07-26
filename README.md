@@ -45,6 +45,7 @@ and refuses to write a config that fails validation.
 
 | Command | What it does |
 |---|---|
+| `list` | Read-only view of positions, targets, values and drift. No solve; never fails. |
 | `plan [--months N] [--monthly C]` | The contribution plan for one horizon. The daily driver. |
 | `sweep [--max N]` | Horizon chart: max drift vs. months, with the convergence point. |
 | `set <ISIN> <value>` | Record a position's current market value into state. |
@@ -56,7 +57,11 @@ and refuses to write a config that fails validation.
 | `freeze <ISIN> [--scale \| --to …]` | Stop buying a position but keep holding it (wind-down). |
 | `unfreeze <ISIN> <target> [--scale \| --from …]` | Resume buying a wind-down position. |
 
-Global flags: `--config PATH`, `--state PATH`.
+Global flags: `--config PATH`, `--state PATH`, `--no-color`.
+
+Output is coloured when writing to a terminal (green/red drift by sign, dim zeros).
+Colour turns off automatically when piped or redirected, or with `--no-color` / the
+`NO_COLOR` environment variable.
 
 ### Making room for a target change
 
