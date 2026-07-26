@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lukingo187/re.balance/internal/config"
+	"github.com/lukingo187/re.balance/internal/money"
 	"github.com/lukingo187/re.balance/internal/state"
 	"github.com/spf13/cobra"
 )
@@ -18,7 +19,7 @@ func newSetCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			isin := strings.ToUpper(strings.TrimSpace(args[0]))
-			cents, err := parseMoney(args[1])
+			cents, err := money.Parse(args[1])
 			if err != nil {
 				return err
 			}
@@ -35,7 +36,7 @@ func newSetCmd() *cobra.Command {
 				return fmt.Errorf("saving state: %w", err)
 			}
 
-			out := fmt.Sprintf("%sset %s = %s", margin, isin, formatEuro(cents))
+			out := fmt.Sprintf("%sset %s = %s", margin, isin, money.Euro(cents))
 			if !isinInConfig(cmd, isin) {
 				out += "  (note: no position with this ISIN in config — stored anyway)"
 			}

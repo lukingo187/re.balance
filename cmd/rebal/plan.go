@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/lukingo187/re.balance/internal/money"
 	"github.com/lukingo187/re.balance/internal/rebal"
 	"github.com/spf13/cobra"
 )
@@ -64,7 +65,7 @@ func printPlan(w io.Writer, in rebal.Input, plan rebal.Plan) {
 	}
 
 	fmt.Fprintf(w, "\n%sPortfolio: %s total · %d €/month · %d-month horizon\n\n",
-		margin, formatEuro(total), in.Monthly, in.Months)
+		margin, money.Euro(total), in.Monthly, in.Months)
 
 	rows := [][]Cell{{
 		tinted("Position", bold), tinted("ISIN", bold), tinted("Value", bold),
@@ -72,7 +73,7 @@ func printPlan(w io.Writer, in rebal.Input, plan rebal.Plan) {
 	}}
 	for i := range in.Positions {
 		p := in.Positions[i]
-		val := plain(formatEuro(in.Values[i]))
+		val := plain(money.Euro(in.Values[i]))
 		switch {
 		case p.WindDown:
 			rows = append(rows, []Cell{

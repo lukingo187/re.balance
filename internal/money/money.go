@@ -1,4 +1,7 @@
-package main
+// Package money converts between human-typed amounts and int64 cents, and back.
+// It is shared by the CLI and the TUI so both parse and display money the same
+// way (spec §3, §6).
+package money
 
 import (
 	"fmt"
@@ -6,8 +9,8 @@ import (
 	"strings"
 )
 
-// parseMoney reads a human-typed amount into int64 cents. It accepts the forms
-// in spec §6 — "12450,00", "12450.00", "12 450 €" — plus grouped variants.
+// Parse reads a human-typed amount into int64 cents. It accepts the forms in
+// spec §6 — "12450,00", "12450.00", "12 450 €" — plus grouped variants.
 //
 // Disambiguation of '.' vs ',':
 //   - both present: the rightmost is the decimal separator, the other groups
@@ -15,7 +18,7 @@ import (
 //   - one present: a separator followed by exactly 3 digits (or repeated) is
 //     thousands grouping ("1.234" -> 123400); 1-2 digits is a decimal
 //     ("1,50" -> 150, "1.5" -> 150).
-func parseMoney(s string) (int64, error) {
+func Parse(s string) (int64, error) {
 	// Keep only digits and separators; drop spaces, €, letters.
 	kept := make([]rune, 0, len(s))
 	for _, r := range s {
@@ -80,10 +83,10 @@ func parseMoney(s string) (int64, error) {
 	return euros*100 + cents, nil
 }
 
-// formatEuro renders int64 cents as EU-style money: 1245000 -> "12 450,00 €".
+// Euro renders int64 cents as EU-style money: 1245000 -> "12 450,00 €".
 // Thousands are space-grouped and the decimal separator is a comma, matching
 // the display in rebalance-spec.md §8.
-func formatEuro(cents int64) string {
+func Euro(cents int64) string {
 	neg := cents < 0
 	if neg {
 		cents = -cents

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/lukingo187/re.balance/internal/money"
 	"github.com/lukingo187/re.balance/internal/rebal"
 	"github.com/spf13/cobra"
 )
@@ -36,7 +37,7 @@ func newListCmd() *cobra.Command {
 
 			out := cmd.OutOrStdout()
 			fmt.Fprintf(out, "\n%sPortfolio: %s total · %d €/month · target %d-month horizon\n\n",
-				margin, formatEuro(total), in.Monthly, in.Months)
+				margin, money.Euro(total), in.Monthly, in.Months)
 
 			rows := [][]Cell{{
 				tinted("Position", bold), tinted("ISIN", bold), tinted("Target", bold),
@@ -44,7 +45,7 @@ func newListCmd() *cobra.Command {
 			}}
 			for i := range in.Positions {
 				p := in.Positions[i]
-				val := plain(formatEuro(in.Values[i]))
+				val := plain(money.Euro(in.Values[i]))
 				switch {
 				case p.WindDown:
 					rows = append(rows, []Cell{
