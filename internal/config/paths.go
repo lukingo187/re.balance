@@ -18,9 +18,11 @@ func DefaultPath() (string, error) {
 	return filepath.Join(dir, "rebal", "config.toml"), nil
 }
 
-// starter is the commented config written on first run. It is the spec's
-// 50/30/20 example, ready to edit.
-const starter = `# re.balance configuration — this file is yours to edit; re.balance only reads it.
+// starter is the config written on first run: the spec's 50/30/20 example, ready
+// to use. After this, the file is managed through the CLI (add, rm, retarget,
+// edit, settings) — those rewrite it and do not preserve comments.
+const starter = `# re.balance configuration — managed through the CLI (add, rm, retarget, edit,
+# settings). You can hand-edit it, but a CLI write will not keep your comments.
 # Current market values are NOT here; set them with 'rebal set <ISIN> <value>'.
 
 [settings]

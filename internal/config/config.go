@@ -1,11 +1,13 @@
-// Package config loads and represents the user-owned config.toml: portfolio
-// settings and the list of positions. It is hand-edited and may carry comments,
-// so re.balance only ever reads it — current market values live in state.json.
+// Package config loads, mutates, and writes config.toml: portfolio settings and
+// the list of positions. The file is owned by re.balance and managed through the
+// CLI (add, rm, retarget, edit, settings) rather than by hand — current market
+// values live separately in state.json.
 package config
 
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/lukingo187/re.balance/internal/rebal"
 	"github.com/pelletier/go-toml/v2"
@@ -26,8 +28,8 @@ type Position struct {
 	Name       string  `toml:"name"`
 	ISIN       string  `toml:"isin"`
 	Target     float64 `toml:"target"`
-	MinMonthly *int    `toml:"min_monthly"`
-	WindDown   bool    `toml:"wind_down"`
+	MinMonthly *int    `toml:"min_monthly,omitempty"`
+	WindDown   bool    `toml:"wind_down,omitempty"`
 }
 
 // Config is a parsed config.toml.
@@ -47,6 +49,36 @@ func Load(path string) (Config, error) {
 		return Config{}, fmt.Errorf("parsing %s: %w", path, err)
 	}
 	return c, nil
+}
+
+// managedHeader is prepended to every written config so a human who opens the
+// file knows it is CLI-managed. go-toml does not round-trip comments, so this is
+// the one comment that survives — the tool rewrites it on every save.
+const managedHeader = "# Managed by re.balance — edit through the CLI (add, rm, retarget, edit,\n" +
+	"# settings), not by hand. Current market values live in state.json.\n\n"
+
+// Write serialises a config to path atomically: it marshals to a temp file in the
+// same directory and renames it into place, so an interrupted write can never
+// leave a half-written config. Parent directories are created as needed.
+func Write(path string, c Config) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	body, err := toml.Marshal(c)
+	if err != nil {
+		return err
+	}
+	data := append([]byte(managedHeader), body...)
+
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+		return err
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		os.Remove(tmp)
+		return err
+	}
+	return nil
 }
 
 // ToInput builds a solver Input by merging the config with current values from
