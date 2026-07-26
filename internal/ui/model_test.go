@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/textinput"
 
 	"github.com/lukingo187/re.balance/internal/config"
@@ -87,6 +88,27 @@ func TestRecomputeOnBadMonthly(t *testing.T) {
 	}
 	if m.bannerView() == "" {
 		t.Fatal("banner should be non-empty when there are issues")
+	}
+}
+
+// stubKey is a fmt.Stringer stand-in for a key press, so bindings can be checked
+// without constructing a full tea.KeyPressMsg.
+type stubKey string
+
+func (s stubKey) String() string { return string(s) }
+
+// TestFocusKeys: up/down navigate focus like shift+tab / tab.
+func TestFocusKeys(t *testing.T) {
+	m := sampleModel(t)
+	if !key.Matches(stubKey("down"), m.keys.Next) || !key.Matches(stubKey("tab"), m.keys.Next) {
+		t.Error("down and tab should both move to the next field")
+	}
+	if !key.Matches(stubKey("up"), m.keys.Prev) || !key.Matches(stubKey("shift+tab"), m.keys.Prev) {
+		t.Error("up and shift+tab should both move to the previous field")
+	}
+	// Arrows for the horizon must not double as focus keys.
+	if key.Matches(stubKey("left"), m.keys.Next) || key.Matches(stubKey("right"), m.keys.Prev) {
+		t.Error("left/right are horizon keys, not focus keys")
 	}
 }
 

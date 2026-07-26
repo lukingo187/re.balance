@@ -21,8 +21,8 @@ type keyMap struct {
 
 func newKeyMap() keyMap {
 	return keyMap{
-		Next:      key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "next field")),
-		Prev:      key.NewBinding(key.WithKeys("shift+tab"), key.WithHelp("shift+tab", "prev field")),
+		Next:      key.NewBinding(key.WithKeys("tab", "down"), key.WithHelp("↑↓", "field")),
+		Prev:      key.NewBinding(key.WithKeys("shift+tab", "up"), key.WithHelp("shift+tab", "prev field")),
 		Edit:      key.NewBinding(key.WithKeys("e", "enter"), key.WithHelp("e", "edit value")),
 		Left:      key.NewBinding(key.WithKeys("left"), key.WithHelp("←/→", "horizon")),
 		Right:     key.NewBinding(key.WithKeys("right")),
