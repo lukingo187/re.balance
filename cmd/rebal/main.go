@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/lukingo187/re.balance/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -24,11 +25,22 @@ func newRootCmd() *cobra.Command {
 		SilenceUsage: true,
 		// Decide colour once per run, before any command produces output.
 		PersistentPreRun: func(cmd *cobra.Command, _ []string) { setColor(cmd) },
-		// Subcommands land here as the milestones in rebalance-spec.md §10 are
-		// completed. With no args this will launch the TUI (milestone 6+); until
-		// then it prints help.
+		// With no subcommand, launch the TUI (spec §8). It reuses the same config
+		// and state the CLI does; a missing config still writes a starter first.
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Help()
+			cfg, err := loadConfig(cmd)
+			if err != nil {
+				return err
+			}
+			st, statePath, err := loadState(cmd)
+			if err != nil {
+				return err
+			}
+			cfgPath, err := configPath(cmd)
+			if err != nil {
+				return err
+			}
+			return ui.Run(cfg, st, cfgPath, statePath)
 		},
 	}
 

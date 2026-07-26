@@ -107,12 +107,21 @@ heap, no heuristics. **Convergence horizon** is just the first month where max d
 your tolerance. See [`rebalance-spec.md`](rebalance-spec.md) for the full design, and
 [`docs/wind-down-positions.md`](docs/wind-down-positions.md) for the wind-down rationale.
 
+## TUI
+
+Run `rebal` with no arguments to open the single-screen TUI: your positions, the live plan, the
+monthly/horizon controls and the horizon chart, in one view. It's a thin skin over the same engine
+and config the CLI uses — it edits the *what-if* knobs (monthly amount, horizon, current values) and
+re-solves instantly, while config *structure* (adding positions, changing targets, wind-down) stays a
+CLI-only operation. `w` saves the current monthly/horizon as your new config defaults.
+
+The static screen and `w`-save are in place; the live chart cursor (arrow-key horizon), inline value
+editing, and mouse support are the remaining milestones.
+
 ## Status
 
-The CLI is complete and is the whole product; the engine (`internal/rebal`) and chart renderer
-(`internal/ui/chart`) are pure standard-library packages. A single-screen TUI — where the horizon
-chart becomes a live cursor that re-solves the plan as you move it — is the planned next milestone,
-built as a thin skin over the same engine and config-mutation layer the CLI already uses.
+The engine (`internal/rebal`) and chart renderer (`internal/ui/chart`) are pure standard-library
+packages; the CLI is complete; the TUI is under construction (above).
 
 ## Development
 
