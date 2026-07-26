@@ -29,7 +29,7 @@ func mustSolve(t *testing.T, in Input) Plan {
 func TestSolve_SumAndFloors(t *testing.T) {
 	rng := rand.New(rand.NewSource(1))
 	for iter := 0; iter < 2000; iter++ {
-		floor := rng.Intn(40)             // shared floor 0..39
+		floor := rng.Intn(40)               // shared floor 0..39
 		monthly := 3*floor + rng.Intn(2000) // guaranteed >= sum of floors
 		in := Input{
 			Positions: []Position{

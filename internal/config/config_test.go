@@ -39,8 +39,8 @@ func TestToInput(t *testing.T) {
 	c := Config{
 		Settings: Settings{MonthlyTotal: 400, DefaultMinMonthly: 25, HorizonMonths: 12},
 		Positions: []Position{
-			{Name: "A", ISIN: "AAA", Target: 60},                          // default floor 25
-			{Name: "B", ISIN: "BBB", Target: 40, MinMonthly: &override},   // floor 50
+			{Name: "A", ISIN: "AAA", Target: 60},                            // default floor 25
+			{Name: "B", ISIN: "BBB", Target: 40, MinMonthly: &override},     // floor 50
 			{Name: "C", ISIN: "CCC", WindDown: true, MinMonthly: &override}, // forced to 0
 		},
 	}
