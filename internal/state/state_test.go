@@ -12,8 +12,6 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	want := State{
 		Updated: "2026-07-18T10:00:00Z",
 		Values:  map[string]int64{"IE00B4L5Y983": 1245000, "IE00BKM4GZ66": 731050},
-		Monthly: 400,
-		Months:  12,
 	}
 	if err := Save(path, want); err != nil {
 		t.Fatalf("Save: %v", err)
@@ -22,7 +20,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if got.Values["IE00B4L5Y983"] != 1245000 || got.Monthly != 400 || got.Months != 12 {
+	if got.Values["IE00B4L5Y983"] != 1245000 || got.Values["IE00BKM4GZ66"] != 731050 {
 		t.Fatalf("round-trip mismatch: %+v", got)
 	}
 }

@@ -18,12 +18,12 @@ type Snapshot struct {
 	Values map[string]int64 `json:"values"`
 }
 
-// State is a parsed state.json.
+// State is a parsed state.json. Values are the source of truth for current market
+// values; History banks a per-day snapshot of them for a future drift-over-time
+// view (written now, not yet read).
 type State struct {
 	Updated string           `json:"updated"`
 	Values  map[string]int64 `json:"values"`
-	Monthly int              `json:"monthly"`
-	Months  int              `json:"months"`
 	History []Snapshot       `json:"history"`
 }
 
