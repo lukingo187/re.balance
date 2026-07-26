@@ -24,11 +24,27 @@ type Series struct {
 // Opts controls rendering. Mark, when non-nil, wraps each column's cell so the
 // TUI can hit-test it (bubblezone); it is nil in the CLI. Cursor is the X value
 // (month) to mark, or 0 for none.
+//
+// The Style* hooks colour the output. Each defaults to identity when nil, so the
+// package stays pure — the CLI injects ANSI, the TUI can inject its own. Colour
+// is never the only signal: converged cells already use a distinct glyph.
 type Opts struct {
 	Height    int
 	Tolerance float64
 	Cursor    int
 	Mark      func(month int, s string) string
+
+	StyleDrift     func(string) string // above-tolerance points, and the "does not converge" line
+	StyleConverged func(string) string // at/below-tolerance points, and the "converges" line
+	StyleDim       func(string) string // chrome: header and the tolerance rule
+}
+
+// identity returns f, or a passthrough when f is nil.
+func identity(f func(string) string) func(string) string {
+	if f == nil {
+		return func(s string) string { return s }
+	}
+	return f
 }
 
 const (
@@ -53,6 +69,9 @@ func Render(s Series, o Opts) string {
 	if mark == nil {
 		mark = func(_ int, str string) string { return str }
 	}
+	styleDrift := identity(o.StyleDrift)
+	styleConverged := identity(o.StyleConverged)
+	styleDim := identity(o.StyleDim)
 
 	// y-range is 0 .. max(Y[0], 2×tolerance); Y[0] is month 1, the largest drift.
 	ymax := math.Max(s.Y[0], 2*o.Tolerance)
@@ -70,7 +89,7 @@ func Render(s Series, o Opts) string {
 	}
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s max drift (pp)\n", strings.Repeat(" ", gutter))
+	fmt.Fprintf(&b, "%s %s\n", strings.Repeat(" ", gutter), styleDim("max drift (pp)"))
 
 	for r := height - 1; r >= 0; r-- {
 		label := ""
@@ -92,16 +111,16 @@ func Render(s Series, o Opts) string {
 			cell := " "
 			switch {
 			case pointRow[c] == r && s.Y[c] <= o.Tolerance:
-				cell = glyphConverged
+				cell = styleConverged(glyphConverged)
 			case pointRow[c] == r:
-				cell = glyphDrift
+				cell = styleDrift(glyphDrift)
 			case r == tolRow:
-				cell = glyphRule
+				cell = styleDim(glyphRule)
 			}
 			b.WriteString(mark(s.X[c], cell))
 		}
 		if r == tolRow {
-			fmt.Fprintf(&b, "  tolerance ±%spp", trim(o.Tolerance))
+			fmt.Fprintf(&b, "  %s", styleDim(fmt.Sprintf("tolerance ±%spp", trim(o.Tolerance))))
 		}
 		b.WriteByte('\n')
 	}
@@ -132,7 +151,7 @@ func Render(s Series, o Opts) string {
 		}
 	}
 
-	b.WriteString(summary(s, o))
+	b.WriteString(summary(s, o, styleConverged, styleDrift))
 	return b.String()
 }
 
@@ -158,13 +177,13 @@ func labelRow(x []int, n int) string {
 }
 
 // summary is the one-line verdict under the chart.
-func summary(s Series, o Opts) string {
+func summary(s Series, o Opts, styleConverged, styleDrift func(string) string) string {
 	for c := range s.X {
 		if s.Y[c] <= o.Tolerance {
-			return fmt.Sprintf("converges to ±%spp at month %d ✓\n", trim(s.Y[c]), s.X[c])
+			return styleConverged(fmt.Sprintf("converges to ±%spp at month %d ✓", trim(s.Y[c]), s.X[c])) + "\n"
 		}
 	}
-	return fmt.Sprintf("does not converge within %d months\n", s.X[len(s.X)-1])
+	return styleDrift(fmt.Sprintf("does not converge within %d months", s.X[len(s.X)-1])) + "\n"
 }
 
 func indexOf(xs []int, v int) int {

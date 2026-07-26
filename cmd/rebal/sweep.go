@@ -47,7 +47,12 @@ func newSweepCmd() *cobra.Command {
 
 			out := cmd.OutOrStdout()
 			fmt.Fprintf(out, "\n%s%d €/month · tolerance %s\n\n", margin, in.Monthly, formatTol(cfg.Settings.TolerancePP))
-			fmt.Fprintln(out, chart.Render(s, chart.Opts{Tolerance: cfg.Settings.TolerancePP}))
+			fmt.Fprintln(out, chart.Render(s, chart.Opts{
+				Tolerance:      cfg.Settings.TolerancePP,
+				StyleDrift:     red,
+				StyleConverged: green,
+				StyleDim:       dim,
+			}))
 			return nil
 		},
 	}
