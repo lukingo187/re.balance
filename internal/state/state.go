@@ -1,6 +1,6 @@
-// Package state loads and saves the app-owned state.json: current market values
-// (keyed by ISIN, in cents), the last-used monthly/months, and a per-day history
-// of value changes. Unlike config.toml this is rewritten freely.
+// Package state loads and saves the app-owned state.json: the current market
+// value of each position (keyed by ISIN, in cents). Unlike config.toml this is
+// rewritten freely.
 package state
 
 import (
@@ -12,19 +12,11 @@ import (
 	"time"
 )
 
-// Snapshot records the values set on one calendar day.
-type Snapshot struct {
-	Date   string           `json:"date"`
-	Values map[string]int64 `json:"values"`
-}
-
 // State is a parsed state.json. Values are the source of truth for current market
-// values; History banks a per-day snapshot of them for a future drift-over-time
-// view (written now, not yet read).
+// values.
 type State struct {
 	Updated string           `json:"updated"`
 	Values  map[string]int64 `json:"values"`
-	History []Snapshot       `json:"history"`
 }
 
 // DefaultPath returns $XDG_STATE_HOME/rebal/state.json, falling back to
@@ -72,26 +64,11 @@ func Save(path string, s State) error {
 	return os.WriteFile(path, append(data, '\n'), 0o644)
 }
 
-// SetValue records a current value (cents) for an ISIN, stamps Updated, and
-// folds it into today's history snapshot, replacing any earlier same-day entry
-// for that ISIN.
+// SetValue records a current value (cents) for an ISIN and stamps Updated.
 func (s *State) SetValue(isin string, cents int64, now time.Time) {
 	if s.Values == nil {
 		s.Values = map[string]int64{}
 	}
 	s.Values[isin] = cents
-	now = now.UTC()
-	s.Updated = now.Format(time.RFC3339)
-
-	day := now.Format("2006-01-02")
-	for i := range s.History {
-		if s.History[i].Date == day {
-			if s.History[i].Values == nil {
-				s.History[i].Values = map[string]int64{}
-			}
-			s.History[i].Values[isin] = cents
-			return
-		}
-	}
-	s.History = append(s.History, Snapshot{Date: day, Values: map[string]int64{isin: cents}})
+	s.Updated = now.UTC().Format(time.RFC3339)
 }

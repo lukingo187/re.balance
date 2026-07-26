@@ -36,28 +36,19 @@ func TestLoadMissingIsEmpty(t *testing.T) {
 	}
 }
 
-// TestSetValueSameDayReplaces: two writes on the same day fold into one snapshot.
-func TestSetValueSameDayReplaces(t *testing.T) {
+// TestSetValue: the latest write for an ISIN wins and Updated is stamped.
+func TestSetValue(t *testing.T) {
 	var s State
-	day := time.Date(2026, 7, 18, 9, 0, 0, 0, time.UTC)
+	now := time.Date(2026, 7, 18, 9, 0, 0, 0, time.UTC)
 
-	s.SetValue("AAA", 100, day)
-	s.SetValue("AAA", 200, day.Add(2*time.Hour)) // same calendar day
-	s.SetValue("BBB", 300, day.Add(3*time.Hour))
+	s.SetValue("AAA", 100, now)
+	s.SetValue("AAA", 200, now.Add(2*time.Hour)) // overwrites
+	s.SetValue("BBB", 300, now.Add(3*time.Hour))
 
-	if s.Values["AAA"] != 200 {
-		t.Fatalf("AAA = %d, want 200 (latest wins)", s.Values["AAA"])
+	if s.Values["AAA"] != 200 || s.Values["BBB"] != 300 {
+		t.Fatalf("values = %v", s.Values)
 	}
-	if len(s.History) != 1 {
-		t.Fatalf("history has %d snapshots, want 1 (same day)", len(s.History))
-	}
-	if s.History[0].Values["AAA"] != 200 || s.History[0].Values["BBB"] != 300 {
-		t.Fatalf("snapshot = %v", s.History[0].Values)
-	}
-
-	// A later day starts a new snapshot.
-	s.SetValue("AAA", 400, day.AddDate(0, 0, 1))
-	if len(s.History) != 2 {
-		t.Fatalf("history has %d snapshots, want 2 after new day", len(s.History))
+	if s.Updated == "" {
+		t.Fatal("Updated was not stamped")
 	}
 }
