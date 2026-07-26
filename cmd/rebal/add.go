@@ -92,9 +92,11 @@ func printConvergence(w io.Writer, cfg config.Config, isin, name string, values 
 		max = 36
 	}
 	if n, ok := convergenceHorizon(in, tol, max); ok {
-		fmt.Fprintf(w, "%s%s converges to within %s at month %d.\n", margin, name, formatTol(tol), n)
+		fmt.Fprintf(w, "%swith %s added, the portfolio is on target (within %s) from month %d.\n",
+			margin, name, formatTol(tol), n)
 	} else {
-		fmt.Fprintf(w, "%s%s does not converge within %d months at %d €/month.\n", margin, name, max, in.Monthly)
+		fmt.Fprintf(w, "%swith %s added, the portfolio is not on target within %d months at %d €/month.\n",
+			margin, name, max, in.Monthly)
 	}
 }
 
