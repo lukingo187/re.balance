@@ -6,7 +6,6 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/lukingo187/re.balance/internal/config"
 	"github.com/lukingo187/re.balance/internal/rebal"
@@ -56,8 +55,9 @@ func printTargetSet(w io.Writer, before, after config.Config) {
 		}
 	}
 
-	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintf(tw, "%sPosition\tISIN\tTarget\tΔ\t\n", margin)
+	rows := [][]Cell{{
+		tinted("Position", bold), tinted("ISIN", bold), tinted("Target", bold), tinted("Δ", bold),
+	}}
 
 	afterActive := map[string]bool{}
 	for _, p := range after.Positions {
@@ -68,11 +68,11 @@ func printTargetSet(w io.Writer, before, after config.Config) {
 		afterActive[key] = true
 		switch old, wasActive := beforeActive[key]; {
 		case wasActive:
-			writeTargetRow(tw, p.Name, p.ISIN, old, p.Target, "")
+			rows = append(rows, targetRow(p.Name, p.ISIN, old, p.Target, ""))
 		case beforeFrozen[key]:
-			writeTargetRow(tw, p.Name, p.ISIN, 0, p.Target, "unfrozen")
+			rows = append(rows, targetRow(p.Name, p.ISIN, 0, p.Target, "unfrozen"))
 		default:
-			writeTargetRow(tw, p.Name, p.ISIN, 0, p.Target, "new")
+			rows = append(rows, targetRow(p.Name, p.ISIN, 0, p.Target, "new"))
 		}
 	}
 	// Positions active before but no longer in the active set: removed, or frozen
@@ -86,28 +86,35 @@ func printTargetSet(w io.Writer, before, after config.Config) {
 		if afterFrozen[key] {
 			label = "frozen"
 		}
-		writeTargetRow(tw, p.Name, p.ISIN, p.Target, 0, label)
+		rows = append(rows, targetRow(p.Name, p.ISIN, p.Target, 0, label))
 	}
-	tw.Flush()
+	table(w, rows, []bool{false, false, false, true})
 }
 
-func writeTargetRow(tw io.Writer, name, isin string, before, after float64, label string) {
+// targetRow builds one before→after row for the target diff table. The Δ is
+// coloured git-style: green for an increase, red for a decrease, dim for none.
+func targetRow(name, isin string, before, after float64, label string) []Cell {
 	if label != "" {
 		name += " (" + label + ")"
 	}
 	var target, delta string
+	var dc func(string) string
 	switch {
 	case label == "removed" || label == "frozen":
 		target = trimPct(before) + " → —"
-		delta = fmt.Sprintf("%+.1f", -before)
+		delta, dc = fmt.Sprintf("%+.1f", -before), red
 	case before == after:
-		target = trimPct(after)
-		delta = "·"
+		target, delta, dc = trimPct(after), "·", dim
 	default:
 		target = trimPct(before) + " → " + trimPct(after)
 		delta = fmt.Sprintf("%+.1f", after-before)
+		if after > before {
+			dc = green
+		} else {
+			dc = red
+		}
 	}
-	fmt.Fprintf(tw, "%s%s\t%s\t%s\t%s\t\n", margin, name, isin, target, delta)
+	return []Cell{plain(name), plain(isin), plain(target), tinted(delta, dc)}
 }
 
 func normKey(isin string) string { return strings.ToUpper(strings.TrimSpace(isin)) }
@@ -177,7 +184,7 @@ func refuseInvalid(cmd *cobra.Command, issues []rebal.Issue) error {
 	out := cmd.OutOrStdout()
 	fmt.Fprintf(out, "\n%srefusing — the result would be invalid:\n", margin)
 	for _, is := range issues {
-		fmt.Fprintf(out, "%s  %s: %s\n", margin, is.Severity, is.Message)
+		fmt.Fprintf(out, "%s  %s: %s\n", margin, red(is.Severity.String()), is.Message)
 	}
 	return fmt.Errorf("aborted — nothing written")
 }

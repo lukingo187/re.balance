@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"text/tabwriter"
+	"io"
 
 	"github.com/lukingo187/re.balance/internal/config"
 	"github.com/lukingo187/re.balance/internal/rebal"
@@ -85,12 +85,13 @@ func settingsPatch(cmd *cobra.Command) (config.SettingsPatch, bool) {
 	return p, changed
 }
 
-func printSettings(w interface{ Write([]byte) (int, error) }, s config.Settings) {
-	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintf(tw, "\n%smonthly_total\t%d €/month\t\n", margin, s.MonthlyTotal)
-	fmt.Fprintf(tw, "%sdefault_min_monthly\t%d €\t\n", margin, s.DefaultMinMonthly)
-	fmt.Fprintf(tw, "%shorizon_months\t%d\t\n", margin, s.HorizonMonths)
-	fmt.Fprintf(tw, "%stolerance_pp\t%s\t\n", margin, formatTol(s.TolerancePP))
-	fmt.Fprintf(tw, "%smax_horizon\t%d\t\n", margin, s.MaxHorizon)
-	tw.Flush()
+func printSettings(w io.Writer, s config.Settings) {
+	fmt.Fprintln(w)
+	table(w, [][]Cell{
+		{tinted("monthly_total", dim), plain(fmt.Sprintf("%d €/month", s.MonthlyTotal))},
+		{tinted("default_min_monthly", dim), plain(fmt.Sprintf("%d €", s.DefaultMinMonthly))},
+		{tinted("horizon_months", dim), plain(fmt.Sprintf("%d", s.HorizonMonths))},
+		{tinted("tolerance_pp", dim), plain(formatTol(s.TolerancePP))},
+		{tinted("max_horizon", dim), plain(fmt.Sprintf("%d", s.MaxHorizon))},
+	}, nil)
 }

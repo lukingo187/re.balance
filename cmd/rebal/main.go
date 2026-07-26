@@ -22,6 +22,8 @@ func newRootCmd() *cobra.Command {
 		// Usage is help, not an error report: don't dump it when a command
 		// returns a runtime error (bad value, validation failure, etc.).
 		SilenceUsage: true,
+		// Decide colour once per run, before any command produces output.
+		PersistentPreRun: func(cmd *cobra.Command, _ []string) { setColor(cmd) },
 		// Subcommands land here as the milestones in rebalance-spec.md §10 are
 		// completed. With no args this will launch the TUI (milestone 6+); until
 		// then it prints help.
@@ -32,7 +34,7 @@ func newRootCmd() *cobra.Command {
 
 	root.PersistentFlags().String("config", "", "path to config.toml")
 	root.PersistentFlags().String("state", "", "path to state.json")
-	root.PersistentFlags().Bool("no-color", false, "disable colour output")
+	root.PersistentFlags().Bool("no-color", false, "disable colour output (also honours NO_COLOR)")
 
 	// Keep Cobra's auto-generated `completion` command working (so `rebal
 	// completion zsh` still emits a script) but drop it from the help listing —
@@ -40,7 +42,7 @@ func newRootCmd() *cobra.Command {
 	root.CompletionOptions.HiddenDefaultCmd = true
 
 	root.AddCommand(
-		newPlanCmd(), newSetCmd(), newCheckCmd(), newSweepCmd(),
+		newListCmd(), newPlanCmd(), newSetCmd(), newCheckCmd(), newSweepCmd(),
 		newAddCmd(), newRmCmd(), newEditCmd(), newSettingsCmd(),
 		newFreezeCmd(), newUnfreezeCmd(),
 	)

@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
-	"text/tabwriter"
 
 	"github.com/lukingo187/re.balance/internal/rebal"
 	"github.com/spf13/cobra"
@@ -54,7 +54,7 @@ func newPlanCmd() *cobra.Command {
 
 // printPlan renders the plan table from spec §8. "Now" and "Target" are shares
 // of the active pool; frozen positions show em-dashes and a "frozen" plan.
-func printPlan(w interface{ Write([]byte) (int, error) }, in rebal.Input, plan rebal.Plan) {
+func printPlan(w io.Writer, in rebal.Input, plan rebal.Plan) {
 	var total, activePool int64
 	for i, v := range in.Values {
 		total += v
@@ -63,31 +63,43 @@ func printPlan(w interface{ Write([]byte) (int, error) }, in rebal.Input, plan r
 		}
 	}
 
-	fmt.Fprintf(w, "\n  Portfolio: %s total · %d €/month · %d-month horizon\n\n",
-		formatEuro(total), in.Monthly, in.Months)
+	fmt.Fprintf(w, "\n%sPortfolio: %s total · %d €/month · %d-month horizon\n\n",
+		margin, formatEuro(total), in.Monthly, in.Months)
 
-	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', tabwriter.AlignRight)
-	fmt.Fprintln(tw, "  Position\tISIN\tValue\tNow\tTarget\tDrift\tPlan\t")
+	rows := [][]Cell{{
+		tinted("Position", bold), tinted("ISIN", bold), tinted("Value", bold),
+		tinted("Now", bold), tinted("Target", bold), tinted("Drift", bold), tinted("Plan", bold),
+	}}
 	for i := range in.Positions {
 		p := in.Positions[i]
-		if p.WindDown {
-			fmt.Fprintf(tw, "  %s\t%s\t%s\t—\t—\t—\tfrozen\t\n", p.Name, p.ISIN, formatEuro(in.Values[i]))
-			continue
-		}
-		if activePool == 0 {
+		val := plain(formatEuro(in.Values[i]))
+		switch {
+		case p.WindDown:
+			rows = append(rows, []Cell{
+				plain(p.Name), plain(p.ISIN), val,
+				tinted("—", dim), tinted("—", dim), tinted("—", dim), tinted("frozen", dim),
+			})
+		case activePool == 0:
 			// Fresh portfolio: current weight is undefined (0/0), so there is
 			// nothing to drift from yet. The plan is still a valid target split.
-			fmt.Fprintf(tw, "  %s\t%s\t%s\t—\t%.0f%%\t—\t%d €\t\n",
-				p.Name, p.ISIN, formatEuro(in.Values[i]), p.TargetPct, plan.Monthly[i])
-			continue
+			rows = append(rows, []Cell{
+				plain(p.Name), plain(p.ISIN), val,
+				tinted("—", dim), plain(fmt.Sprintf("%.0f%%", p.TargetPct)), tinted("—", dim),
+				plain(fmt.Sprintf("%d €", plan.Monthly[i])),
+			})
+		default:
+			nowPct := 100 * float64(in.Values[i]) / float64(activePool)
+			drift := nowPct - p.TargetPct
+			rows = append(rows, []Cell{
+				plain(p.Name), plain(p.ISIN), val,
+				plain(fmt.Sprintf("%.1f%%", nowPct)), plain(fmt.Sprintf("%.0f%%", p.TargetPct)),
+				tinted(fmt.Sprintf("%+.1fpp", drift), driftColor(drift)),
+				plain(fmt.Sprintf("%d €", plan.Monthly[i])),
+			})
 		}
-		nowPct := 100 * float64(in.Values[i]) / float64(activePool)
-		drift := nowPct - p.TargetPct
-		fmt.Fprintf(tw, "  %s\t%s\t%s\t%.1f%%\t%.0f%%\t%+.1fpp\t%d €\t\n",
-			p.Name, p.ISIN, formatEuro(in.Values[i]), nowPct, p.TargetPct, drift, plan.Monthly[i])
 	}
-	tw.Flush()
+	table(w, rows, []bool{false, false, true, true, true, true, true})
 
-	fmt.Fprintf(w, "\n  Projected max drift at month %d: %s\n\n",
-		in.Months, formatPP(plan.MaxDriftPP))
+	fmt.Fprintf(w, "\n%sProjected max drift at month %d: %s\n\n",
+		margin, in.Months, formatPP(plan.MaxDriftPP))
 }

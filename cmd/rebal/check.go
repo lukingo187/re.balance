@@ -24,11 +24,11 @@ func newCheckCmd() *cobra.Command {
 			issues := rebal.Validate(cfg.ToInput(st.Values))
 			out := cmd.OutOrStdout()
 			if len(issues) == 0 {
-				fmt.Fprintf(out, "%s✓ config and state are valid\n", margin)
+				fmt.Fprintf(out, "%s%s config and state are valid\n", margin, green("✓"))
 				return nil
 			}
 			for _, is := range issues {
-				fmt.Fprintf(out, "%s%s: %s\n", margin, is.Severity, is.Message)
+				fmt.Fprintf(out, "%s%s: %s\n", margin, red(is.Severity.String()), is.Message)
 			}
 			return fmt.Errorf("%d issue(s) found", len(issues))
 		},
