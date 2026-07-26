@@ -125,8 +125,9 @@ func Render(s Series, o Opts) string {
 		b.WriteByte('\n')
 	}
 
-	// X-axis with ticks every three months.
-	fmt.Fprintf(&b, "%s└", strings.Repeat(" ", gutter))
+	// X-axis with ticks every three months. The corner sits under the y-axis
+	// border (one past the gutter), so ticks line up with the columns above.
+	fmt.Fprintf(&b, "%s└", strings.Repeat(" ", gutter+1))
 	for c := 0; c < n; c++ {
 		if s.X[c]%3 == 0 {
 			b.WriteString("┬")
@@ -147,7 +148,7 @@ func Render(s Series, o Opts) string {
 				row[i] = ' '
 			}
 			row[ci] = '▲'
-			fmt.Fprintf(&b, "%s %s\n", strings.Repeat(" ", gutter), string(row))
+			fmt.Fprintf(&b, "%s %s\n", strings.Repeat(" ", gutter+1), string(row))
 		}
 	}
 
@@ -173,7 +174,7 @@ func labelRow(x []int, n int) string {
 			}
 		}
 	}
-	return fmt.Sprintf("%s %s\n", strings.Repeat(" ", gutter), string(row))
+	return fmt.Sprintf("%s %s\n", strings.Repeat(" ", gutter+1), string(row))
 }
 
 // summary is the one-line verdict under the chart: the earliest horizon that
