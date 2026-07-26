@@ -123,8 +123,8 @@ where *your* choice lands, updating as you move it.
 The math is a separable-convex resource allocation: ignoring growth (contributions are linear), the
 optimal integer split that minimises squared deviation from target end-values is "give each euro to
 whoever is furthest below target." It's exact, deterministic, and costs ~a thousand comparisons — no
-heap, no heuristics. See [`rebalance-spec.md`](rebalance-spec.md) for the full design, and
-[`docs/wind-down-positions.md`](docs/wind-down-positions.md) for the wind-down rationale.
+heap, no heuristics. See [`rebalance-spec.md`](rebalance-spec.md) for the full design (including the
+wind-down rationale in §4).
 
 ## TUI
 
