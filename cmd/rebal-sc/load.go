@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/lukingo187/re.balance/internal/config"
@@ -45,6 +46,19 @@ func loadConfigIfExists(cmd *cobra.Command) (cfg config.Config, path string, exi
 	}
 	cfg, err = config.Load(path)
 	return cfg, path, true, err
+}
+
+// loadConfig is loadConfigIfExists for callers that have no use for a missing
+// config (push/sync-without---create-missing): it just errors.
+func loadConfig(cmd *cobra.Command) (config.Config, error) {
+	cfg, path, existed, err := loadConfigIfExists(cmd)
+	if err != nil {
+		return config.Config{}, err
+	}
+	if !existed {
+		return config.Config{}, fmt.Errorf("no config at %s — run `rebal check` to create one", path)
+	}
+	return cfg, nil
 }
 
 func loadState(cmd *cobra.Command) (state.State, string, error) {

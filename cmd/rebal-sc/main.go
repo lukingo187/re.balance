@@ -33,7 +33,7 @@ func newRootCmd() *cobra.Command {
 	// from the help listing — same call as cmd/rebal.
 	root.CompletionOptions.HiddenDefaultCmd = true
 
-	root.AddCommand(newListCmd(), newSyncCmd())
+	root.AddCommand(newListCmd(), newSyncCmd(), newPushCmd())
 	return root
 }
 
