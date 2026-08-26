@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 )
@@ -39,40 +37,44 @@ func newListCmd() *cobra.Command {
 				return err
 			}
 
-			fmt.Fprintln(out, "Holdings")
-			w := newTable(out)
-			fmt.Fprintln(w, "ISIN\tName\tValue\tIn rebal?")
+			fmt.Fprintf(out, "\n%sHoldings\n\n", margin)
+			rows := [][]Cell{header("Position", "ISIN", "Value", "In rebal?")}
 			for _, h := range holdings {
-				inRebal := ""
+				inRebal := tinted("—", dim)
 				if tracked[strings.ToUpper(h.ISIN)] {
-					inRebal = "yes"
+					inRebal = plain("yes")
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", h.ISIN, h.Name, formatMoney(h.Valuation, h.ValuationCurrency), inRebal)
+				rows = append(rows, []Cell{
+					plain(h.Name), plain(h.ISIN), plain(formatMoney(h.Valuation, h.ValuationCurrency)), inRebal,
+				})
 			}
-			w.Flush()
+			table(out, rows, []bool{false, false, true, false})
 
-			fmt.Fprintln(out, "\nSavings plans")
-			w = newTable(out)
-			fmt.Fprintln(w, "ISIN\tName\tAmount\tFrequency\tDay\tNext execution")
+			fmt.Fprintf(out, "\n%sSavings plans\n\n", margin)
+			rows = [][]Cell{header("Position", "ISIN", "Amount", "Frequency", "Day", "Next execution")}
 			for _, p := range plans {
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s\n",
-					p.ISIN, p.Name, formatMoney(p.Amount, "EUR"), p.Frequency, p.DayOfMonth, p.NextExecutionDate)
+				freq := plain(p.Frequency)
+				if p.Frequency != "MONTHLY" {
+					freq = tinted(p.Frequency, dim)
+				}
+				rows = append(rows, []Cell{
+					plain(p.Name), plain(p.ISIN), plain(formatMoney(p.Amount, "EUR")), freq,
+					plain(fmt.Sprintf("%d", p.DayOfMonth)), plain(p.NextExecutionDate),
+				})
 			}
-			w.Flush()
+			table(out, rows, []bool{false, false, true, false, true, false})
 
-			fmt.Fprintln(out, "\nWatchlist")
-			w = newTable(out)
-			fmt.Fprintln(w, "ISIN\tName\tPrice")
+			fmt.Fprintf(out, "\n%sWatchlist\n\n", margin)
+			rows = [][]Cell{header("Position", "ISIN", "Price")}
 			for _, item := range watch {
-				fmt.Fprintf(w, "%s\t%s\t%s\n", item.ISIN, item.Name, formatMoney(item.QuoteMidPrice, item.QuoteCurrency))
+				rows = append(rows, []Cell{
+					plain(item.Name), plain(item.ISIN), plain(formatMoney(item.QuoteMidPrice, item.QuoteCurrency)),
+				})
 			}
-			w.Flush()
+			table(out, rows, []bool{false, false, true})
+			fmt.Fprintln(out)
 
 			return nil
 		},
 	}
-}
-
-func newTable(out io.Writer) *tabwriter.Writer {
-	return tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
 }

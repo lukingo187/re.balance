@@ -71,8 +71,7 @@ func newSyncCmd() *cobra.Command {
 			}
 
 			// --- value sync: every holding already tracked by rebal ---
-			w := newTable(out)
-			fmt.Fprintln(w, "ISIN\tName\tOld\tNew")
+			rows := [][]Cell{header("ISIN", "Name", "Old", "New")}
 			valueChanges := 0
 			for _, h := range holdings {
 				isin := strings.ToUpper(h.ISIN)
@@ -87,13 +86,19 @@ func newSyncCmd() *cobra.Command {
 				if newCents == oldCents {
 					continue
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", h.ISIN, h.Name, money.Euro(oldCents), money.Euro(newCents))
+				dc := green
+				if newCents < oldCents {
+					dc = red
+				}
+				rows = append(rows, []Cell{
+					plain(h.ISIN), plain(h.Name), plain(money.Euro(oldCents)), tinted(money.Euro(newCents), dc),
+				})
 				valueChanges++
 				st.SetValue(isin, newCents, now)
 			}
 			if valueChanges > 0 {
-				fmt.Fprintln(out, "Values")
-				w.Flush()
+				fmt.Fprintf(out, "\n%sValues\n\n", margin)
+				table(out, rows, []bool{false, false, true, true})
 			}
 
 			// Explicit ISINs that don't match a Scalable holding at all: say so.
@@ -106,7 +111,7 @@ func newSyncCmd() *cobra.Command {
 					}
 				}
 				if !found {
-					fmt.Fprintf(out, "  %s: not found in Scalable holdings, skipped\n", isin)
+					fmt.Fprintf(out, "%s%s\n", margin, dim(fmt.Sprintf("note: %s not found in Scalable holdings, skipped", isin)))
 				}
 			}
 
@@ -131,22 +136,21 @@ func newSyncCmd() *cobra.Command {
 						}
 					}
 
-					fmt.Fprintln(out, "\nNew positions (target ≈ current value share)")
-					wt := newTable(out)
-					fmt.Fprintln(wt, "ISIN\tName\tTarget")
+					fmt.Fprintf(out, "\n%sNew positions %s\n\n", margin, dim("(target ≈ current value share)"))
+					newRows := [][]Cell{header("ISIN", "Name", "Target")}
 					for _, p := range newCfg.Positions {
 						if !tracked[strings.ToUpper(p.ISIN)] {
-							fmt.Fprintf(wt, "%s\t%s\t%s\n", p.ISIN, p.Name, trimPct(p.Target)+"%")
+							newRows = append(newRows, []Cell{plain(p.ISIN), plain(p.Name), plain(trimPct(p.Target) + "%")})
 						}
 					}
-					wt.Flush()
+					table(out, newRows, []bool{false, false, true})
 					createdChanges = len(missing)
 
 					if !dryRun {
 						if err := config.Write(cfgPath, newCfg); err != nil {
 							return fmt.Errorf("writing config: %w", err)
 						}
-						fmt.Fprintf(out, "  wrote %s (%d position(s) added)\n", cfgPath, createdChanges)
+						fmt.Fprintf(out, "%swrote %s (%d position(s) added)\n", margin, cfgPath, createdChanges)
 					}
 					cfg = newCfg
 					for _, h := range missing {
@@ -158,17 +162,17 @@ func newSyncCmd() *cobra.Command {
 			}
 
 			if valueChanges == 0 && createdChanges == 0 {
-				fmt.Fprintln(out, "nothing to update — already in sync")
+				fmt.Fprintf(out, "\n%snothing to update — already in sync\n", margin)
 				return nil
 			}
 			if dryRun {
-				fmt.Fprintln(out, "\ndry run — nothing written")
+				fmt.Fprintf(out, "\n%sdry run — nothing written\n", margin)
 				return nil
 			}
 			if err := state.Save(statePath, st); err != nil {
 				return fmt.Errorf("saving state: %w", err)
 			}
-			fmt.Fprintf(out, "wrote %s\n", statePath)
+			fmt.Fprintf(out, "%swrote %s\n\n", margin, statePath)
 			return nil
 		},
 	}
