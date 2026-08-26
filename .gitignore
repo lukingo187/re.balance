@@ -1,5 +1,6 @@
-# Compiled binary (built from ./cmd/rebal)
+# Compiled binaries
 /rebal
+/rebal-sc
 
 # Personal portfolio data — kept out of git (copy config.example.toml instead)
 /config.toml
