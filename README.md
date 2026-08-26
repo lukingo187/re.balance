@@ -229,6 +229,16 @@ Complete. The engine (`internal/rebal`) and chart renderer (`internal/ui/chart`)
 standard-library packages; the CLI and the TUI are both done. Mouse support (the one unbuilt spec
 milestone) was deliberately skipped — the keyboard TUI is fully operable and mouse added little.
 
+## Addons
+
+`rebal` itself stays exactly as described above — offline, no broker dependency. `cmd/rebal-sc`
+is an optional, opt-in addon (`make build-sc` / `make install-sc`, not part of `make build`) that
+bridges `rebal` and the [official Scalable Capital broker CLI](https://github.com/ScalableCapital/scalable-cli):
+pulling live valuations into `state.json`, and previewing/submitting `rebal plan`'s computed
+amounts as Scalable savings-plan changes, with the broker's own two-step disclosure and
+confirmation on every change. See [`scalable-integration.md`](scalable-integration.md) for the
+full design and how it's used.
+
 ## Development
 
 ```sh
