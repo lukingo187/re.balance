@@ -17,17 +17,14 @@ func newSyncCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sync [ISIN...]",
 		Short: "Pull current Scalable valuations into rebal's state.json",
-		Long: "Fetches live valuations from `sc broker holdings` and writes them into\n" +
-			"state.json — the same effect as running `rebal set <ISIN> <value>` for each\n" +
-			"one. By default it only touches ISINs that already exist in config.toml and\n" +
-			"never creates positions.\n\n" +
+		Long: "Fetches live valuations from `sc broker holdings` into state.json — the\n" +
+			"same effect as `rebal set <ISIN> <value>` per position. By default only\n" +
+			"touches ISINs already in config.toml.\n\n" +
 			"Give explicit ISINs to update just those, or --all for every position that\n" +
 			"exists in both rebal and Scalable.\n\n" +
-			"--create-missing (used with --all) also adds any Scalable holding that isn't\n" +
-			"in config.toml yet, at a target proportional to its current value — handy the\n" +
-			"first time you point rebal-sc at an account rebal doesn't know about yet. It\n" +
-			"never removes or renames anything; review the printed target diff and adjust\n" +
-			"with `rebal edit` afterwards if the starting point isn't what you want.",
+			"--create-missing (with --all) also adds Scalable holdings not yet tracked,\n" +
+			"targeted at their share of portfolio value. Never removes or renames\n" +
+			"anything; adjust with `rebal edit` afterwards if needed.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if createMissing && !all {
 				return fmt.Errorf("--create-missing requires --all")

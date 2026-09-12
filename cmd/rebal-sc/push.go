@@ -17,27 +17,15 @@ func newPushCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "push [ISIN...]",
 		Short: "Preview rebal's plan as Scalable savings-plan changes (never submits)",
-		Long: "Computes rebal's contribution plan (like `rebal plan`) and, for each\n" +
-			"active position whose computed monthly amount differs from Scalable (or\n" +
-			"has no Scalable plan at all yet), runs `sc broker savings-plans add`\n" +
-			"phase 1 — a preview with no side effects, per sc's own docs — and prints\n" +
-			"the full ex-ante cost disclosure sc requires before any confirmation.\n" +
-			"Separately, any position that's frozen (wind-down) in rebal but still has\n" +
-			"an active Scalable plan is listed for removal — sc has no preview step\n" +
-			"for removing a plan, so that section just shows the current plan and the\n" +
-			"exact commands to remove it later.\n\n" +
-			"This command never submits or removes anything itself. Review the\n" +
-			"disclosure, then either run the printed sc command yourself, or come back\n" +
-			"later and run `rebal-sc push confirm <ISIN> --id <CONFIRMATION_ID>` (or\n" +
-			"`--remove` for a frozen position's plan) as a separate, deliberate step —\n" +
-			"never chained automatically from this preview.\n\n" +
-			"Skipped, always with a note: a non-monthly Scalable plan, and a computed\n" +
-			"amount of 0 or less on a position that isn't frozen (an edge case, not\n" +
-			"the normal wind-down path).\n\n" +
-			"--amount overrides rebal's computed plan entirely for one ISIN (e.g. to\n" +
-			"force a plan back to a specific value regardless of what rebal currently\n" +
-			"recommends). Requires exactly one ISIN and cannot be combined with --all;\n" +
-			"the same amount must then be repeated on `push confirm ... --amount`.",
+		Long: "Computes rebal's plan (like `rebal plan`) and, for each position whose\n" +
+			"amount differs from Scalable (or has none yet), runs `sc broker\n" +
+			"savings-plans add` phase 1 — a side-effect-free preview — and prints the\n" +
+			"full disclosure sc requires before confirming. A frozen position with a\n" +
+			"still-active Scalable plan is listed separately for removal instead.\n\n" +
+			"Never submits or removes anything itself. Review the disclosure, then run\n" +
+			"`rebal-sc push confirm <ISIN> --id <ID>` (or `--remove`) yourself, as a\n" +
+			"separate step. See scalable-integration.md for the skip rules and full\n" +
+			"command semantics.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.Flags().Changed("amount") {
 				if all || len(args) != 1 {
@@ -193,24 +181,14 @@ func newPushConfirmCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "confirm <ISIN>",
 		Short: "Submit or remove a previously previewed savings-plan change",
-		Long: "With --id: runs `sc broker savings-plans add --confirm` for one ISIN,\n" +
-			"using rebal's currently computed monthly amount — or, with --amount, a\n" +
-			"value you choose instead — and the confirmation ID printed by a prior\n" +
-			"`rebal-sc push` (or `push --amount`) preview. The amount given here must\n" +
-			"match the one used for that preview; sc rejects a mismatch.\n\n" +
+		Long: "With --id: runs `sc broker savings-plans add --confirm` using rebal's\n" +
+			"current plan (or --amount to override) and the confirmation ID from a\n" +
+			"prior `push` preview; the amount must match what was previewed.\n\n" +
 			"With --remove: runs `sc broker savings-plans remove` for a position\n" +
-			"that's frozen (wind-down) in rebal but still has an active Scalable\n" +
-			"plan — refuses if the position isn't actually frozen in rebal, or has\n" +
-			"no active plan to remove. sc has no phase-1/phase-2 split for removal,\n" +
-			"so --remove itself is the only confirmation step; that's exactly why\n" +
-			"it's its own separate, deliberately-named flag rather than the default.\n\n" +
-			"Either way, this is the only rebal-sc command that actually changes\n" +
-			"anything on Scalable — run it only after reviewing `rebal-sc push`'s\n" +
-			"output yourself, as a separate, deliberate step; rebal-sc never runs\n" +
-			"this on its own.\n\n" +
-			"For --id: if the plan has changed since the preview (e.g. after another\n" +
-			"`rebal-sc sync`) or the confirmation has expired, sc rejects it rather\n" +
-			"than submit something you didn't see.",
+			"that's frozen in rebal but still has an active Scalable plan.\n\n" +
+			"The only command that actually changes anything on Scalable — run it\n" +
+			"yourself, after reviewing `push`'s output, as a separate step. See\n" +
+			"scalable-integration.md for the refusal rules.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if remove && id != "" {
