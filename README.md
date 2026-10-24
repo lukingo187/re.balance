@@ -62,8 +62,12 @@ Complete: engine, CLI and TUI. `rebal-sc` is an optional addon and never a depen
 ## Development
 
 ```sh
-make test     # go test ./... -count=1
-make vet
-make fmt
+make test       # go test ./... -count=1
+make lint       # gofmt, go mod tidy, vet, staticcheck, govulncheck — same as CI
+make snapshot   # build all release archives into ./dist (needs goreleaser)
 make run ARGS="plan --months 6"
 ```
+
+Changes go through pull requests with [Conventional Commit](https://www.conventionalcommits.org)
+titles, squash-merged into `main`. Releases are cut by pushing a `vX.Y.Z` tag; GoReleaser builds the
+archives and updates the Homebrew tap.
