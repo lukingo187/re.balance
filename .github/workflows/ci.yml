@@ -32,3 +32,35 @@ jobs:
 
       - name: test
         run: go test ./... -count=1
+
+  # Runs rebal-sc's contract test against the real sc CLI. Renovate bumps
+  # SC_VERSION on each sc release, so a red run on that PR means the release
+  # changed something rebal-sc depends on.
+  sc-contract:
+    runs-on: ubuntu-latest
+    env:
+      # renovate: datasource=github-releases depName=ScalableCapital/scalable-cli
+      SC_VERSION: "1.2.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: install sc
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v${SC_VERSION}"
+          name="sc-${tag}-linux-x86_64-gnu"
+          gh release download "$tag" -R ScalableCapital/scalable-cli \
+            -p "${name}.tar.gz" -p "sc-${tag}-SHA256SUMS" -D "$RUNNER_TEMP"
+          cd "$RUNNER_TEMP"
+          grep " ${name}.tar.gz\$" "sc-${tag}-SHA256SUMS" | sha256sum -c -
+          tar xzf "${name}.tar.gz"
+          echo "$RUNNER_TEMP/${name}" >> "$GITHUB_PATH"
+
+      - name: contract test
+        run: SC_CONTRACT=1 go test ./cmd/rebal-sc -run TestSCContract -count=1 -v
