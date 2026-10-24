@@ -1,5 +1,9 @@
 # re.balance
 
+[![CI](https://github.com/lukingo187/re.balance/actions/workflows/ci.yml/badge.svg)](https://github.com/lukingo187/re.balance/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/lukingo187/re.balance)](https://github.com/lukingo187/re.balance/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 A savings-plan rebalancer. You own a handful of ETF positions with target weights (say 50/30/20).
 Prices drift, so the actual weights no longer match. You invest a fixed amount every month.
 `rebal` computes how to split that monthly amount across your positions so the portfolio converges
@@ -11,12 +15,17 @@ turn "here's what I hold and what I want" into "here's what to set each monthly 
 ## Install
 
 ```sh
-make install          # installs `rebal` into your GOBIN
-# or
-make build            # just compiles ./rebal in the repo root
+brew install lukingo187/tap/rebal     # macOS / Linux, installs rebal and rebal-sc
 ```
 
-Requires Go 1.26+.
+Or download an archive from [Releases](https://github.com/lukingo187/re.balance/releases), or build
+from source (Go 1.26+):
+
+```sh
+go install github.com/lukingo187/re.balance/cmd/rebal@latest
+# or, from a checkout
+make install
+```
 
 ## Quickstart
 

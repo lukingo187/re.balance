@@ -64,3 +64,21 @@ jobs:
 
       - name: contract test
         run: SC_CONTRACT=1 go test ./cmd/rebal-sc -run TestSCContract -count=1 -v
+
+  # Builds every release target without publishing, so a broken release
+  # config or cross-compile shows up on the PR, not on the tag.
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: goreleaser/goreleaser-action@v7
+        with:
+          version: "~> v2"
+          args: release --snapshot --clean

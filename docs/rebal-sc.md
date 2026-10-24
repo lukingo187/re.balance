@@ -10,10 +10,12 @@ confirmation on every change. It reads and writes the same `config.toml` / `stat
 
 ## Install
 
+Included in the Homebrew cask and release archives. From source:
+
 ```sh
-make build-sc         # compiles ./rebal-sc in the repo root
-# or
-make install-sc       # installs `rebal-sc` into your GOBIN
+go install github.com/lukingo187/re.balance/cmd/rebal-sc@latest
+# or, from a checkout
+make install-sc
 ```
 
 Requires the [`sc` CLI](https://github.com/ScalableCapital/scalable-cli) on `PATH` and logged in

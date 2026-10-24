@@ -1,0 +1,68 @@
+version: 2
+
+project_name: rebal
+
+builds:
+  - id: rebal
+    main: ./cmd/rebal
+    binary: rebal
+    env: [CGO_ENABLED=0]
+    goos: [darwin, linux]
+    goarch: [amd64, arm64]
+    ldflags: -s -w -X main.version={{ .Version }}
+
+  - id: rebal-sc
+    main: ./cmd/rebal-sc
+    binary: rebal-sc
+    env: [CGO_ENABLED=0]
+    goos: [darwin, linux]
+    goarch: [amd64, arm64]
+    ldflags: -s -w -X main.version={{ .Version }}
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files: [LICENSE, README.md, config.example.toml]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^feat(\(.+\))?!?:'
+      order: 0
+    - title: Fixes
+      regexp: '^fix(\(.+\))?!?:'
+      order: 1
+    - title: Other
+      order: 999
+  filters:
+    exclude:
+      - '^docs(\(.+\))?:'
+      - '^test(\(.+\))?:'
+      - '^ci(\(.+\))?:'
+      - '^chore(\(.+\))?:'
+
+homebrew_casks:
+  - name: rebal
+    binaries: [rebal, rebal-sc]
+    homepage: https://github.com/lukingo187/re.balance
+    description: Savings-plan rebalancer that never sells
+    license: MIT
+    repository:
+      owner: lukingo187
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    # The binaries aren't notarized; drop the quarantine flag so macOS runs them.
+    hooks:
+      post:
+        install_steps: |
+          on_macos do
+            run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/rebal", "{{ .StagedPath }}/rebal-sc"]
+          end

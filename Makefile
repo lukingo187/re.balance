@@ -13,7 +13,7 @@ endif
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -X main.version=$(VERSION)
 
-.PHONY: build install test vet fmt clean run build-sc install-sc
+.PHONY: build install test vet fmt clean run build-sc install-sc snapshot
 
 ## build: compile ./rebal in the repo root
 build:
@@ -49,9 +49,13 @@ vet:
 fmt:
 	go fmt ./...
 
-## clean: remove the built binaries
+## snapshot: build all release archives into ./dist without publishing
+snapshot:
+	goreleaser release --snapshot --clean
+
+## clean: remove the built binaries and release output
 clean:
-	rm -f $(BINARY) $(BINARY_SC)
+	rm -rf $(BINARY) $(BINARY_SC) dist
 
 ## run: build and run (pass args with ARGS=..., e.g. make run ARGS="plan --months 6")
 run: build
