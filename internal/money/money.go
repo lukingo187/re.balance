@@ -85,7 +85,7 @@ func Parse(s string) (int64, error) {
 
 // Euro renders int64 cents as EU-style money: 1245000 -> "12 450,00 €".
 // Thousands are space-grouped and the decimal separator is a comma, matching
-// the display in rebalance-spec.md §8.
+// the display in docs/rebalance-spec.md §8.
 func Euro(cents int64) string {
 	neg := cents < 0
 	if neg {
