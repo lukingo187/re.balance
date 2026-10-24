@@ -47,6 +47,13 @@ rebal sweep
 # Or run `rebal` with no arguments for the interactive TUI.
 ```
 
+## Scalable Capital integration
+
+Investing with Scalable Capital? The optional `rebal-sc` addon uses Scalable's official
+[`sc` CLI](https://github.com/ScalableCapital/scalable-cli) to pull current values from your account
+and turn `rebal`'s plan into savings-plan changes, always as a preview first, with a separate
+confirm step. See [rebal-sc](docs/rebal-sc.md).
+
 ## Docs
 
 | | |
