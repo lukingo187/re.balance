@@ -24,8 +24,7 @@ func newPushCmd() *cobra.Command {
 			"still-active Scalable plan is listed separately for removal instead.\n\n" +
 			"Never submits or removes anything itself. Review the disclosure, then run\n" +
 			"`rebal-sc push confirm <ISIN> --id <ID>` (or `--remove`) yourself, as a\n" +
-			"separate step. See docs/scalable-integration.md for the skip rules and full\n" +
-			"command semantics.",
+			"separate step. See docs/rebal-sc.md for the safety rules.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.Flags().Changed("amount") {
 				if all || len(args) != 1 {
@@ -188,7 +187,7 @@ func newPushConfirmCmd() *cobra.Command {
 			"that's frozen in rebal but still has an active Scalable plan.\n\n" +
 			"The only command that actually changes anything on Scalable — run it\n" +
 			"yourself, after reviewing `push`'s output, as a separate step. See\n" +
-			"docs/scalable-integration.md for the refusal rules.",
+			"docs/rebal-sc.md for the refusal rules.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if remove && id != "" {

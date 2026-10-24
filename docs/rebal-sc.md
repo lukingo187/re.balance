@@ -56,6 +56,26 @@ rebal-sc push confirm IE00B4L5Y983 --id <CONFIRMATION_ID>
 
 Global flags: `--config PATH`, `--state PATH`, `--no-color` — same meaning as `rebal`'s.
 
-See [`scalable-integration.md`](scalable-integration.md) for the full design: why it's built this
-way, `sc`'s two-phase preview/confirm workflow and why `push`/`push confirm` are split to match it,
-the safety rules carried over from `sc`'s own design, and gotchas from live use.
+## Safety rules
+
+Real money is involved, so `rebal-sc` follows `sc`'s own rules strictly:
+
+- **Preview and submit are separate commands.** `sc` requires the cost disclosure (phase 1) and the
+  confirmation (phase 2) to be separate, explicit steps. `push` only ever previews; `push confirm`
+  is the only command that changes anything, and you run it yourself.
+- **`push confirm` recomputes the plan** instead of trusting the preview. If anything changed in
+  between, the amount no longer matches and `sc` rejects the stale confirmation.
+- **Removal is its own flag.** `sc` has no preview step for removing a plan, so `--remove` is a
+  separate, explicitly named path and only works for positions frozen in `rebal`.
+- **Non-monthly plans are skipped** with a note, never silently reinterpreted as monthly.
+- **Nothing runs unattended.** `sc login` stays manual, and there is no scheduled sync or push.
+
+## Good to know
+
+- **`sc` needs the Mac unlocked.** It signs every request with a Secure Enclave key, so every call
+  fails while the machine is locked.
+- **Confirm right after previewing.** Confirmation IDs can expire before their displayed expiry.
+  A stale ID is rejected cleanly, but running `push` and `push confirm` back to back is the reliable
+  path.
+- **If a confirm's outcome is unknown** (timeout, crash), check `sc broker savings-plans` before
+  retrying.

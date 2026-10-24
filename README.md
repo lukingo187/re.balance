@@ -45,8 +45,6 @@ rebal sweep
 | [Usage](docs/usage.md) | All commands, changing targets, config & state, the target horizon, TUI keys |
 | [How it works](docs/how-it-works.md) | The optimisation, why the greedy split is exact, a worked example |
 | [rebal-sc](docs/rebal-sc.md) | Optional addon: sync values from and push plans to Scalable Capital via `sc` |
-| [Design record](docs/rebalance-spec.md) | Why `rebal` is built the way it is |
-| [Scalable integration](docs/scalable-integration.md) | Why `rebal-sc` is built the way it is, safety rules |
 
 ## Status
 

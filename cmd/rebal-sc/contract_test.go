@@ -59,7 +59,7 @@ func TestSCContract(t *testing.T) {
 		}
 	})
 
-	// push / push confirm exist to honor this split; see scalable-integration.md.
+	// push / push confirm exist to honor this split; see docs/rebal-sc.md.
 	t.Run("savings-plans add is still two-phase", func(t *testing.T) {
 		if got := caps.Workflows["broker.savings-plans.add"].Mode; got != "two_phase_confirmation" {
 			t.Errorf("savings-plans.add mode = %q, want two_phase_confirmation", got)

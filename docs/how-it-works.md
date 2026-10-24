@@ -3,8 +3,7 @@
 The math is a separable-convex resource allocation: ignoring growth (contributions are linear), the
 optimal integer split that minimises squared deviation from target end-values is "give each euro to
 whoever is furthest below target." It's exact, deterministic, and costs ~a thousand comparisons — no
-heap, no heuristics. See [`rebalance-spec.md`](rebalance-spec.md) for the full design (including the
-wind-down rationale in §4).
+heap, no heuristics.
 
 ## The optimisation, in full
 
@@ -79,3 +78,18 @@ Zero drift — this horizon happens to be exactly long enough. That's the relati
 charts: drift shrinks as the horizon grows, and the "earliest on target" line marks the shortest horizon
 where it hits zero (or, in general, falls within tolerance). See
 [The target horizon](usage.md#the-target-horizon-important) above.
+
+## Wind-down positions
+
+A frozen position (`wind_down = true`) is one you keep holding but no longer buy. Because `rebal`
+never sells, its weight can only decay toward zero without ever reaching it, so it can't carry a
+target or count toward drift. Otherwise it would read as "never on target" forever. Instead it
+leaves the target pool entirely:
+
+- Active targets sum to 100 among themselves: freezing the 20 in a 50/30/20 split gives 62.5/37.5.
+- Drift is measured over active positions only, so the plan still converges.
+- The frozen value still counts toward the displayed portfolio total.
+
+It's an explicit flag rather than `target = 0` on purpose: TOML reads a missing value as `0`, so a
+forgotten target would silently mean "stop buying". A test pins the behaviour down: freezing a
+position must give the same active plan as deleting it.
