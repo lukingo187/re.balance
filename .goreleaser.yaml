@@ -28,7 +28,11 @@ checksum:
   name_template: checksums.txt
 
 changelog:
-  use: github
+  # Squash merges make every commit subject a PR title, so the subject line
+  # alone is the changelog entry.
+  use: git
+  format: "{{ .Message }} ({{ .SHA }})"
+  abbrev: 7
   sort: asc
   groups:
     - title: Features
