@@ -13,7 +13,7 @@ endif
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -X main.version=$(VERSION)
 
-.PHONY: build install test vet fmt clean run build-sc install-sc snapshot
+.PHONY: build install test vet lint fmt clean run build-sc install-sc snapshot
 
 ## build: compile ./rebal in the repo root
 build:
@@ -44,6 +44,14 @@ test:
 ## vet: run go vet
 vet:
 	go vet ./...
+
+## lint: gofmt check, vet, staticcheck and govulncheck (same as CI)
+lint:
+	@test -z "$$(gofmt -l .)" || { echo "not gofmt-clean:"; gofmt -l .; exit 1; }
+	go mod tidy -diff
+	go vet ./...
+	go tool staticcheck ./...
+	go tool govulncheck ./...
 
 ## fmt: format all Go files
 fmt:

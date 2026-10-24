@@ -5,16 +5,22 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
 
       - name: gofmt
         run: |
@@ -24,14 +30,36 @@ jobs:
             exit 1
           fi
 
+      - name: go mod tidy
+        run: go mod tidy -diff
+
       - name: vet
         run: go vet ./...
+
+      - name: staticcheck
+        run: go tool staticcheck ./...
+
+      - name: govulncheck
+        run: go tool govulncheck ./...
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
 
       - name: build
         run: go build ./...
 
       - name: test
-        run: go test ./... -count=1
+        run: go test -race ./... -count=1
 
   # Runs rebal-sc's contract test against the real sc CLI. Renovate bumps
   # SC_VERSION on each sc release, so a red run on that PR means the release
@@ -44,10 +72,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
 
       - name: install sc
         env:
@@ -74,7 +101,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
