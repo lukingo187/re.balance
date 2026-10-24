@@ -1,0 +1,107 @@
+# Usage
+
+Full reference for `rebal`. For a first run see the [Quickstart](../README.md#quickstart).
+
+## Commands
+
+`rebal` **owns** `config.toml` — the config-changing commands write it for you (atomically), so you
+never hand-edit. Every writing command accepts `--dry-run` to preview the result without saving,
+and refuses to write a config that fails validation.
+
+| Command | What it does |
+|---|---|
+| `list` | Read-only view of positions, targets, values and drift. No solve; never fails. |
+| `plan [--months N] [--monthly C]` | The contribution plan for one horizon. The daily driver. |
+| `sweep [--max N]` | Horizon chart: max drift vs. months, with the convergence point. |
+| `set <ISIN> <value>` | Record a position's current market value into state. |
+| `check` | Validate config + state; non-zero exit on fatal issues. |
+| `add --name … --isin … --target T [--scale \| --from …] [--min M]` | Add a position, make room for its target, write config. |
+| `rm <ISIN> [--scale \| --to …]` | Remove a position, redistribute its target, write config. |
+| `edit <ISIN> [--name …] [--min M \| --clear-min] [--target T [--scale \| --from …]]` | Change a position's name, floor or target. |
+| `settings [--monthly N] [--tolerance X] [--horizon N] [--max-horizon N] [--default-min N]` | Show or change global settings. |
+| `freeze <ISIN> [--scale \| --to …]` | Stop buying a position but keep holding it (wind-down). |
+| `unfreeze <ISIN> <target> [--scale \| --from …]` | Resume buying a wind-down position. |
+
+Global flags: `--config PATH`, `--state PATH`, `--no-color`.
+
+Output is coloured when writing to a terminal (green/red drift by sign, dim zeros).
+Colour turns off automatically when piped or redirected, or with `--no-color` / the
+`NO_COLOR` environment variable.
+
+### Making room for a target change
+
+Any command that changes targets must keep them summing to 100, so it asks *where* the change comes
+from or goes to:
+
+- `--scale` — spread the change across the other positions in proportion to their current weight.
+- `--from ISIN=pp` (taking) / `--to ISIN=pp` (giving) — explicit amounts, **repeatable**; the amounts
+  must sum to the change. A bare `--from ISIN` (no `=`) takes the whole amount from that one position.
+
+```sh
+# Add a 10% position, taking 5pp from each of two others:
+rebal add --name "World Small Cap" --isin IE00XXXXXXXX --target 10 \
+    --from IE00B4L5Y983=5 --from IE00BKM4GZ66=5
+
+# Raise one target to 55%, rescaling the rest to fit:
+rebal edit IE00B4L5Y983 --target 55 --scale
+
+# Stop buying a fund, handing its target back proportionally:
+rebal freeze IE00B3VWMM18 --scale
+```
+
+## Config & state
+
+Two files, deliberately separate:
+
+- **`config.toml`** — settings and positions. Managed by `rebal`; a `# Managed by re.balance` header
+  marks it. Located at `$XDG_CONFIG_HOME/rebal/config.toml` (or your OS config dir), or a
+  `config.toml` in the current directory, or `--config PATH`.
+- **`state.json`** — current market values (per ISIN, in cents), rewritten freely. At
+  `$XDG_STATE_HOME/rebal/state.json` (or `~/.local/state/rebal/`), a local `state.json`, or
+  `--state PATH`.
+
+A new ISIN starts at 0 €; a deleted one becomes an ignored orphan — so adding and removing positions
+is free, with no migration step. See [`config.example.toml`](../config.example.toml) for the format.
+
+## The target horizon (important)
+
+There are two "horizon" numbers, and they mean different things:
+
+- **Target horizon** — an **input you choose**: *"I want to be back on target within N months."* It's
+  not just a readout — it **determines the monthly plan**. A *short* horizon front-loads corrections
+  (aggressive catch-up into the underweight positions); a *long* horizon spreads them out (gentler,
+  more even). So it's a real strategic choice: *how aggressively do I rebalance?*
+- **Earliest on target** — a **computed result** shown under the chart (`earliest on target: month 4`):
+  the *soonest* month at which you'd actually fall within tolerance.
+
+They're related but distinct. Because drift falls as the horizon grows (more months = more total
+contributed = fuller correction by the deadline), the earliest-on-target month is a threshold:
+
+> **Pick a target horizon at or after the earliest-on-target month.** That month = "balanced as fast as
+> possible"; longer = "I'm patient, give me a gentler split"; shorter = "won't make it in time."
+
+In the TUI the drift readout next to the horizon (`Target horizon 6 months → ±1.20pp`) tells you exactly
+where *your* choice lands, updating as you move it.
+
+## TUI
+
+Run `rebal` with no arguments to open the single-screen TUI: your positions, the live plan, the
+monthly/horizon controls and the horizon chart, in one view. It's a thin skin over the same engine
+and config the CLI uses — it edits the *what-if* knobs and re-solves instantly, while config
+*structure* (adding positions, changing targets, wind-down) stays a CLI-only operation.
+
+| Key | Action |
+|---|---|
+| `←` / `→` | move the target horizon (`shift` jumps 6, `home`/`end` to the ends) — re-solves live |
+| `↑` / `↓`, `tab` / `shift+tab` | move focus between positions and the monthly field |
+| `e` | edit the focused position's current value, or the monthly amount |
+| `w` | save the current monthly + horizon as config defaults |
+| `r` | reset monthly + horizon back to the saved defaults |
+| `?` | toggle full help · `q` quit |
+
+Current values **persist** to `state.json` (they're facts); the monthly amount and horizon are
+transient what-ifs (use `w` to make them defaults). On quit, the plan you settled on prints to the
+terminal — the €/position values ready to enter at your broker.
+
+Config *structure* stays CLI-only by design, and the TUI never shells out to the CLI: both are
+independent skins calling the same `internal/rebal` engine and `internal/config` directly.
