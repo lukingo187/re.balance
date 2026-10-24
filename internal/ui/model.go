@@ -3,7 +3,7 @@
 // horizon, current values — and re-solves synchronously on every change. Config
 // structure (positions, targets, wind-down) stays a CLI-only operation; the
 // TUI only ever persists current values, plus monthly/horizon on an explicit
-// save (spec §8).
+// save.
 package ui
 
 import (

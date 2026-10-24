@@ -3,7 +3,7 @@ package ui
 import "charm.land/bubbles/v2/key"
 
 // keyMap is the TUI keybindings. It also satisfies help.KeyMap so the footer is
-// generated, not hand-rolled (spec §8).
+// generated, not hand-rolled.
 type keyMap struct {
 	Next      key.Binding
 	Prev      key.Binding

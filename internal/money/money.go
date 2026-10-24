@@ -1,6 +1,6 @@
 // Package money converts between human-typed amounts and int64 cents, and back.
 // It is shared by the CLI and the TUI so both parse and display money the same
-// way (spec §3, §6).
+// way.
 package money
 
 import (
@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-// Parse reads a human-typed amount into int64 cents. It accepts the forms in
-// spec §6 — "12450,00", "12450.00", "12 450 €" — plus grouped variants.
+// Parse reads a human-typed amount into int64 cents. It accepts
+// "12450,00", "12450.00", "12 450 €" — plus grouped variants.
 //
 // Disambiguation of '.' vs ',':
 //   - both present: the rightmost is the decimal separator, the other groups
@@ -84,8 +84,7 @@ func Parse(s string) (int64, error) {
 }
 
 // Euro renders int64 cents as EU-style money: 1245000 -> "12 450,00 €".
-// Thousands are space-grouped and the decimal separator is a comma, matching
-// the display in docs/rebalance-spec.md §8.
+// Thousands are space-grouped and the decimal separator is a comma.
 func Euro(cents int64) string {
 	neg := cents < 0
 	if neg {

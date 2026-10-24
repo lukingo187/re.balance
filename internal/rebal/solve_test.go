@@ -148,7 +148,7 @@ func TestSweep_DriftNonIncreasing(t *testing.T) {
 	}
 }
 
-// --- Wind-down tests (design doc §6) ---
+// --- Wind-down tests ---
 
 // windDownInput freezes Europe SC; the remaining active targets sum to 100.
 func windDownInput() Input {

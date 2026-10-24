@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-// Validate checks an Input against every rule in the spec (§4) plus the
+// Validate checks an Input against every portfolio rule plus the
 // wind-down rules, scoping the portfolio rules to active positions. It returns
 // all issues found and never panics. An empty result means the input is safe to
 // Solve.

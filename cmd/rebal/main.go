@@ -25,7 +25,7 @@ func newRootCmd() *cobra.Command {
 		SilenceUsage: true,
 		// Decide colour once per run, before any command produces output.
 		PersistentPreRun: func(cmd *cobra.Command, _ []string) { setColor(cmd) },
-		// With no subcommand, launch the TUI (spec §8). It reuses the same config
+		// With no subcommand, launch the TUI. It reuses the same config
 		// and state the CLI does; a missing config still writes a starter first.
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := loadConfig(cmd)

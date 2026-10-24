@@ -53,7 +53,7 @@ func newPlanCmd() *cobra.Command {
 	return cmd
 }
 
-// printPlan renders the plan table from spec §8. "Now" and "Target" are shares
+// printPlan renders the plan table. "Now" and "Target" are shares
 // of the active pool; frozen positions show em-dashes and a "frozen" plan.
 func printPlan(w io.Writer, in rebal.Input, plan rebal.Plan) {
 	var total, activePool int64

@@ -3,7 +3,7 @@ package ui
 import "charm.land/lipgloss/v2"
 
 // Styles holds every style the view uses, built once from the terminal's
-// background (light or dark). No colours appear inline in the view — spec §9.
+// background (light or dark). No colours appear inline in the view.
 type Styles struct {
 	Title      lipgloss.Style
 	Total      lipgloss.Style
@@ -24,7 +24,7 @@ type Styles struct {
 }
 
 // NewStyles builds the palette for a dark or light terminal. Lip Gloss v2 has no
-// AdaptiveColor, so we pick each colour explicitly via LightDark (spec §9).
+// AdaptiveColor, so we pick each colour explicitly via LightDark.
 func NewStyles(dark bool) Styles {
 	ld := lipgloss.LightDark(dark)
 	var (

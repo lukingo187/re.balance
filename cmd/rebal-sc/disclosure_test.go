@@ -6,14 +6,11 @@ import (
 	"testing"
 )
 
-// realSavingsPlanAddData is the "data" payload from a real
+// realSavingsPlanAddData is the "data" payload of a real
 // `sc broker savings-plans add --isin IE00B4L5Y983 --amount 60 --json`
-// phase-1 preview, captured live against a real Scalable account
-// (2026-08-26, before the machine locked and further live sc calls became
-// impossible for this session — see the sc-cli-signing memory). Trimmed to
-// the "presentation" object, which is all parsePresentation reads; the
-// surrounding fields (compliance text, duplicate required_leaf_paths list)
-// are omitted since they add nothing.
+// phase-1 preview, with account, portfolio and confirmation IDs replaced by
+// placeholders. Trimmed to the "presentation" object, which is all
+// parsePresentation reads.
 const realSavingsPlanAddData = `{
   "account_id": "acct00000000000000000",
   "portfolio_id": "pf000000000000000000",
