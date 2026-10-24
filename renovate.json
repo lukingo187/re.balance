@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
   "postUpdateOptions": ["gomodTidy"],
   "customManagers": [
     {
@@ -19,9 +19,16 @@
       "groupName": "charm"
     },
     {
+      "description": "Non-major updates merge themselves once all required checks pass",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
+    },
+    {
+      "description": "sc bumps always wait for review: a green contract test is the signal, not a merge",
       "matchDepNames": ["ScalableCapital/scalable-cli"],
       "labels": ["sc-cli"],
-      "commitMessageTopic": "sc CLI"
+      "commitMessageTopic": "sc CLI",
+      "automerge": false
     }
   ]
 }
