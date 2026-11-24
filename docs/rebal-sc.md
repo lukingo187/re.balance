@@ -69,6 +69,8 @@ Real money is involved, so `rebal-sc` follows `sc`'s own rules strictly:
   between, the amount no longer matches and `sc` rejects the stale confirmation.
 - **Removal is its own flag.** `sc` has no preview step for removing a plan, so `--remove` is a
   separate, explicitly named path and only works for positions frozen in `rebal`.
+- **The execution day is kept.** Changing an existing monthly plan keeps its day of the month; a new
+  plan gets Scalable's default, shown in the preview.
 - **Non-monthly plans are skipped** with a note, never silently reinterpreted as monthly.
 - **Nothing runs unattended.** `sc login` stays manual, and there is no scheduled sync or push.
 

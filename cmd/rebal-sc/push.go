@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
 
 	"github.com/lukingo187/re.balance/internal/rebal"
@@ -41,10 +40,14 @@ func newPushCmd() *cobra.Command {
 				if err := checkOverridable(in, isin); err != nil {
 					return err
 				}
+				plans, _, err := fetchSavingsPlans()
+				if err != nil {
+					return err
+				}
 				out := cmd.OutOrStdout()
 				fmt.Fprintf(out, "\n%s%s\n", margin, dim(fmt.Sprintf(
 					"forcing %s to %d €/month — overriding rebal's own computed plan", isin, amount)))
-				pres, err := previewSavingsPlanAdd(isin, amount)
+				pres, err := previewSavingsPlanAdd(isin, amount, existingDay(plans, isin))
 				if err != nil {
 					return err
 				}
@@ -132,7 +135,7 @@ func newPushCmd() *cobra.Command {
 
 				for _, i := range candidates {
 					pos := in.Positions[i]
-					pres, err := previewSavingsPlanAdd(pos.ISIN, plan.Monthly[i])
+					pres, err := previewSavingsPlanAdd(pos.ISIN, plan.Monthly[i], existingDay(plans, pos.ISIN))
 					if err != nil {
 						fmt.Fprintf(out, "\n%s%s\n", margin, red(fmt.Sprintf("%s: %v", pos.ISIN, err)))
 						continue
@@ -248,7 +251,11 @@ func newPushConfirmCmd() *cobra.Command {
 				return fmt.Errorf("%s's amount is %d € — nothing to confirm", isin, amount)
 			}
 
-			data, err := scRun("broker", "savings-plans", "add", "--isin", isin, "--amount", strconv.Itoa(amount), "--confirm", id)
+			plans, _, err := fetchSavingsPlans()
+			if err != nil {
+				return err
+			}
+			data, err := scRun(savingsPlanAddArgs(isin, amount, existingDay(plans, isin), id)...)
 			if err != nil {
 				return err
 			}
@@ -266,6 +273,19 @@ func newPushConfirmCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&remove, "remove", false, "remove a frozen position's active Scalable plan instead of updating an amount")
 	cmd.Flags().IntVar(&amountOverride, "amount", 0, "use this amount instead of rebal's computed plan (must match the preview)")
 	return cmd
+}
+
+// existingDay returns the execution day of isin's monthly Scalable plan, so
+// an amount change doesn't reset it to sc's default. It is 0 when there is no
+// such plan: a new plan takes the default, and another frequency's day says
+// nothing about a monthly one.
+func existingDay(plans []savingsPlan, isin string) int {
+	for _, p := range plans {
+		if strings.EqualFold(p.ISIN, isin) && p.Frequency == "MONTHLY" {
+			return p.DayOfMonth
+		}
+	}
+	return 0
 }
 
 // checkRemovable is the safety gate for `push confirm --remove`: it never
