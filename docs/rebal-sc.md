@@ -22,7 +22,7 @@ Requires the [`sc` CLI](https://github.com/ScalableCapital/scalable-cli) on `PAT
 (`sc login`, a manual, human-only step — never scripted). Not part of `make build`/`make install`;
 `rebal` never depends on this binary or on `sc`.
 
-Tested against `sc` 1.2.0. CI's `sc-contract` job checks the commands, flags and two-phase
+Tested against `sc` 1.3.0. CI's `sc-contract` job checks the commands, flags and two-phase
 workflow `rebal-sc` relies on against the pinned version, and Renovate opens a PR on every `sc`
 release. A red check on that PR means the release affects `rebal-sc`. To run it locally:
 `SC_CONTRACT=1 go test ./cmd/rebal-sc -run TestSCContract`.
