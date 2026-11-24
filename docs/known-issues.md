@@ -29,3 +29,13 @@ separately. Running the same command from another directory can silently use dif
 with the same values.
 
 **Workaround:** keep a single config, or pass `--config` and `--state`.
+
+## Ideas
+
+- **Guided push:** walk through the changes one position at a time (preview, ask, confirm, next)
+  instead of copying confirmation IDs. `sc` requires an explicit confirmation in a separate
+  interaction and forbids running phase 2 automatically or in the same step as the preview, so
+  check that a prompt satisfies this before building it.
+- **`rebal-sc status`:** one read-only overview of the config in use, the age of the values, live
+  plan total vs. `monthly_total`, execution days and next runs. Would catch a wrong config, a wrong
+  monthly amount or a changed execution day before a push.

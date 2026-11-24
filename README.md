@@ -61,7 +61,7 @@ confirm step. See [rebal-sc](docs/rebal-sc.md).
 | [Usage](docs/usage.md) | All commands, changing targets, config & state, the target horizon, TUI keys |
 | [How it works](docs/how-it-works.md) | The optimisation, why the greedy split is exact, a worked example |
 | [rebal-sc](docs/rebal-sc.md) | Optional addon: sync values from and push plans to Scalable Capital via `sc` |
-| [Known issues](docs/known-issues.md) | Current limitations and workarounds |
+| [Known issues](docs/known-issues.md) | Current limitations, workarounds and ideas |
 
 ## Status
 
