@@ -76,7 +76,7 @@ func TestSCContract(t *testing.T) {
 
 	t.Run("flags rebal-sc passes still exist", func(t *testing.T) {
 		for cmd, flags := range map[string][]string{
-			"savings-plans add":    {"--isin", "--amount", "--confirm", "--json"},
+			"savings-plans add":    {"--isin", "--amount", "--day-of-month", "--confirm", "--json"},
 			"savings-plans remove": {"--isin", "--json"},
 			"holdings":             {"--json"},
 			"watchlist":            {"--json"},

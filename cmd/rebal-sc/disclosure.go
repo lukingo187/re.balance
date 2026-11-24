@@ -92,11 +92,27 @@ type presentation struct {
 	Confirmation confirmation       `json:"confirmation"`
 }
 
+// savingsPlanAddArgs builds the `savings-plans add` call for both phases:
+// preview (empty confirmID) and confirm. Sharing it keeps the two in step,
+// since sc ties a confirmation to the preview's inputs. A dayOfMonth of 0
+// leaves the execution day to sc's default.
+func savingsPlanAddArgs(isin string, amountEUR, dayOfMonth int, confirmID string) []string {
+	args := []string{"broker", "savings-plans", "add", "--isin", isin, "--amount", strconv.Itoa(amountEUR)}
+	if dayOfMonth > 0 {
+		args = append(args, "--day-of-month", strconv.Itoa(dayOfMonth))
+	}
+	if confirmID != "" {
+		args = append(args, "--confirm", confirmID)
+	}
+	return args
+}
+
 // previewSavingsPlanAdd runs sc's phase-1 preview for one ISIN — side-effect
 // free by sc's own design ("this does not create or update a plan") — and
 // returns the disclosure sc requires be shown before any confirmation.
-func previewSavingsPlanAdd(isin string, amountEUR int) (presentation, error) {
-	data, err := scRun("broker", "savings-plans", "add", "--isin", isin, "--amount", strconv.Itoa(amountEUR))
+// dayOfMonth is the day to keep, or 0 for sc's default.
+func previewSavingsPlanAdd(isin string, amountEUR, dayOfMonth int) (presentation, error) {
+	data, err := scRun(savingsPlanAddArgs(isin, amountEUR, dayOfMonth, "")...)
 	if err != nil {
 		return presentation{}, err
 	}

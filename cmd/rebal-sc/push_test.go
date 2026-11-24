@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/lukingo187/re.balance/internal/rebal"
@@ -83,4 +84,48 @@ func TestCheckOverridable(t *testing.T) {
 			t.Error("want error for an ISIN not in config.toml")
 		}
 	})
+}
+
+func TestExistingDay(t *testing.T) {
+	plans := []savingsPlan{
+		{ISIN: "AAA", Frequency: "MONTHLY", DayOfMonth: 1},
+		{ISIN: "BBB", Frequency: "QUARTERLY", DayOfMonth: 7},
+	}
+	for _, tc := range []struct {
+		name, isin string
+		want       int
+	}{
+		{"monthly plan keeps its day", "AAA", 1},
+		{"ISIN matching is case-insensitive", "aaa", 1},
+		{"non-monthly plan", "BBB", 0},
+		{"no plan yet", "ZZZ", 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := existingDay(plans, tc.isin); got != tc.want {
+				t.Errorf("existingDay = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSavingsPlanAddArgs(t *testing.T) {
+	base := []string{"broker", "savings-plans", "add", "--isin", "AAA", "--amount", "269"}
+	for _, tc := range []struct {
+		name string
+		day  int
+		id   string
+		want []string
+	}{
+		{"preview, new plan", 0, "", nil},
+		{"preview, existing day", 1, "", []string{"--day-of-month", "1"}},
+		{"confirm, new plan", 0, "x", []string{"--confirm", "x"}},
+		{"confirm, existing day", 1, "x", []string{"--day-of-month", "1", "--confirm", "x"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := savingsPlanAddArgs("AAA", 269, tc.day, tc.id)
+			if want := append(slices.Clone(base), tc.want...); !slices.Equal(got, want) {
+				t.Errorf("got %v, want %v", got, want)
+			}
+		})
+	}
 }
